@@ -1,0 +1,129 @@
+/* ===================================================
+   공문서 표준 인쇄 (A4 Print) 스타일시트
+   =================================================== */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Pretendard', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 인쇄 시 불필요한 UI 숨김 */
+  .no-print,
+  .app-header,
+  .doc-list-container,
+  .modal-overlay,
+  .btn,
+  .btn-sign-trigger,
+  .btn-remove-img,
+  .search-filter-bar,
+  .sector-tab-bar {
+    display: none !important;
+  }
+
+  /* 메인 컨테이너 인쇄 최적화 */
+  .app-container {
+    padding: 0 !important;
+    background: none !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .official-document {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    page-break-after: avoid;
+  }
+
+  /* 테이블 스타일 인쇄 강제 */
+  table.official-table,
+  table.meta-info-table,
+  table.approval-table,
+  table.inner-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    border: 1.5px solid #000 !important;
+  }
+
+  table.official-table th,
+  table.official-table td,
+  table.meta-info-table th,
+  table.meta-info-table td,
+  table.approval-table th,
+  table.approval-table td {
+    border: 1px solid #333 !important;
+    color: #000 !important;
+    background-color: transparent !important;
+  }
+
+  table.official-table thead th,
+  table.meta-info-table th,
+  table.approval-table th {
+    background-color: #f1f3f5 !important;
+    font-weight: bold !important;
+  }
+
+  /* 입력 필드 인쇄 시 테두리 제거 및 텍스트화 */
+  input.table-input,
+  input.form-input,
+  input.pledge-input,
+  textarea.table-textarea {
+    border: none !important;
+    background: transparent !important;
+    padding: 2px 4px !important;
+    color: #000 !important;
+    font-size: 11pt !important;
+    box-shadow: none !important;
+    resize: none !important;
+  }
+
+  /* 점검 결과 마크 표시 */
+  .hidden-radio {
+    display: none !important;
+  }
+
+  .result-label.checked {
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  .print-mark {
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  .sign-preview img {
+    max-height: 40px !important;
+  }
+
+  .evidence-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .evidence-item img {
+    max-height: 140px !important;
+    object-fit: cover !important;
+  }
+}
