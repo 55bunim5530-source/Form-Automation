@@ -1,5 +1,6 @@
 import React from 'react';
 import { PenTool, Upload, Trash2, Image, Plus } from 'lucide-react';
+import SummarizeButton from '../components/SummarizeButton';
 
 export default function Form10_01_04({ formData, onChange, onOpenSignature }) {
   // 참석자 10명 초기화
@@ -278,7 +279,7 @@ export default function Form10_01_04({ formData, onChange, onOpenSignature }) {
       <table className="official-table mb-3">
         <tbody>
           <tr>
-            <th style={{ width: '18%' }}>교육과목<br/>(주제)</th>
+            <th style={{ width: '22%', minWidth: '135px' }}>교육과목<br/>(주제)</th>
             <td className="font-bold text-sm">
               <input
                 type="text"
@@ -289,18 +290,47 @@ export default function Form10_01_04({ formData, onChange, onOpenSignature }) {
             </td>
           </tr>
           <tr>
-            <th>교육내용</th>
+            <th style={{ width: '22%', minWidth: '135px' }}>
+              <div className="th-summary-container">
+                <span className="th-summary-title">교육내용</span>
+                <SummarizeButton
+                  formCode="10-01-04"
+                  buttonLabel={
+                    <>
+                      관련자료 업로드<br/>및 자동정리
+                    </>
+                  }
+                  onApply={(result) => {
+                    const nextChems = [...chemList];
+                    if (result._detectedChemicals && result._detectedChemicals.length > 0) {
+                      result._detectedChemicals.forEach((c) => {
+                        if (!nextChems.includes(c)) {
+                          nextChems.push(c);
+                        }
+                      });
+                    }
+                    onChange({
+                      ...formData,
+                      eduContent: result.eduContent || formData.eduContent,
+                      chemList: nextChems
+                    });
+                  }}
+                />
+              </div>
+            </th>
             <td>
-              <div className="text-xs space-y-1 py-1 leading-relaxed">
-                <div>1. 대상화학물질의 명칭(또는 제품명)</div>
-                <div>2. 물리적 위험성 및 건강 유해성</div>
-                <div>3. 취급상의 주의사항</div>
-                <div>4. 적절한 보호구</div>
-                <div>5. 응급조치 요령 및 사고시 대처방법</div>
-                <div>6. 물질안전보건자료 및 경고표시를 이해하는 방법</div>
-                <div className="font-bold text-primary mt-2">
-                  8. 취급 유해화학물질 목록
-                </div>
+              <textarea
+                className="table-textarea text-xs w-full mb-2 leading-relaxed"
+                rows={6}
+                value={
+                  formData.eduContent !== undefined
+                    ? formData.eduContent
+                    : `1. 대상화학물질의 명칭(또는 제품명)\n2. 물리적 위험성 및 건강 유해성\n3. 취급상의 주의사항\n4. 적절한 보호구\n5. 응급조치 요령 및 사고시 대처방법\n6. 물질안전보건자료 및 경고표시를 이해하는 방법`
+                }
+                onChange={(e) => handleFieldChange('eduContent', e.target.value)}
+              />
+              <div className="font-bold text-primary text-xs mt-2 mb-1">
+                ■ 취급 유해화학물질 목록
               </div>
 
               {/* 화학물질 목록 */}

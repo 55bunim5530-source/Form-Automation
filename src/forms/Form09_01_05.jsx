@@ -1,5 +1,6 @@
 import React from 'react';
 import { PenTool, Upload, Trash2, Image } from 'lucide-react';
+import SummarizeButton from '../components/SummarizeButton';
 
 export default function Form09_01_05({ formData, onChange, onOpenSignature }) {
   // 참석자 10명 초기화
@@ -254,7 +255,7 @@ export default function Form09_01_05({ formData, onChange, onOpenSignature }) {
       <table className="official-table mb-3">
         <tbody>
           <tr>
-            <th style={{ width: '18%' }}>교육과목<br/>(주제)</th>
+            <th style={{ width: '22%', minWidth: '135px' }}>교육과목<br/>(주제)</th>
             <td className="font-bold text-sm">
               <input
                 type="text"
@@ -265,7 +266,25 @@ export default function Form09_01_05({ formData, onChange, onOpenSignature }) {
             </td>
           </tr>
           <tr>
-            <th>교육내용</th>
+            <th style={{ width: '22%', minWidth: '135px' }}>
+              <div className="th-summary-container">
+                <span className="th-summary-title">교육내용</span>
+                <SummarizeButton
+                  formCode="09-01-05"
+                  buttonLabel={
+                    <>
+                      관련자료 업로드<br/>및 자동정리
+                    </>
+                  }
+                  onApply={(result) => {
+                    onChange({
+                      ...formData,
+                      eduContent: result.eduContent || formData.eduContent
+                    });
+                  }}
+                />
+              </div>
+            </th>
             <td>
               <textarea
                 className="table-textarea text-xs w-full leading-relaxed"

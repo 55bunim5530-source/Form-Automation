@@ -1,5 +1,6 @@
 import React from 'react';
 import { PenTool, Plus, Trash2, Image, Upload } from 'lucide-react';
+import SummarizeButton from '../components/SummarizeButton';
 
 export default function Form04_01_08({ formData, onChange, onOpenSignature }) {
   const docType = formData.docType || 'meeting'; // 'meeting' (회의록) or 'inspection' (합동점검)
@@ -237,7 +238,22 @@ export default function Form04_01_08({ formData, onChange, onOpenSignature }) {
       <table className="official-table mb-3">
         <thead>
           <tr>
-            <th>{docType === 'meeting' ? '협의 내용 등' : '점검내용 및 현장 건의사항'}</th>
+            <th>
+              <div className="flex items-center justify-between px-2">
+                <span>{docType === 'meeting' ? '협의 내용 등' : '점검내용 및 현장 건의사항'}</span>
+                <SummarizeButton
+                  formCode="04-01-08"
+                  buttonLabel="관련자료 업로드 및 자동정리"
+                  onApply={(result) => {
+                    onChange({
+                      ...formData,
+                      agendas: result.agendas || formData.agendas,
+                      suggestions: result.suggestions || formData.suggestions
+                    });
+                  }}
+                />
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>

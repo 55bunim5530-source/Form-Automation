@@ -27,13 +27,9 @@ export default function Header({
               <Shield size={32} className="text-white" />
             </div>
             <div className="hero-text">
-              <div className="hero-badge-row">
-                <span className="hero-badge">서울특별시교육청 매뉴얼 표준 서식</span>
-                <span className="hero-badge-sub">안전총괄담당관 기준</span>
-              </div>
               <h1 className="hero-title">산업안전보건 서식 자동화 시스템</h1>
               <p className="hero-subtitle">
-                표준 서식 6종 온라인 작성 · 전자서명 · A4 공문서 즉시 출력 · 클라우드 실시간 공유
+                표준서식 자동화 작성 &amp; 출력 &amp; 저장 기능
               </p>
             </div>
           </div>
@@ -62,10 +58,16 @@ export default function Header({
                 onChange={(e) => onSelectFormCode(e.target.value)}
                 className="form-select-lg"
               >
-                {Object.entries(FORM_METAS).map(([code, meta]) => (
-                  <option key={code} value={code}>
-                    [{code}] {meta.title}
-                  </option>
+                {Array.from(new Set(Object.values(FORM_METAS).map((m) => m.category))).map((cat) => (
+                  <optgroup key={cat} label={`📂 ${cat}`}>
+                    {Object.entries(FORM_METAS)
+                      .filter(([_, meta]) => meta.category === cat)
+                      .map(([code, meta]) => (
+                        <option key={code} value={code}>
+                          [{code}] {meta.title}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
               <ChevronDown size={16} className="select-arrow" />

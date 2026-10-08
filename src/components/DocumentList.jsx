@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
-import { FileText, Calendar, School, User, Trash2, Edit3, Copy, Printer, Search, RefreshCw, Database, HardDrive } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  FileText, Calendar, School, User, Trash2, Edit3, 
+  Copy, Printer, Search, RefreshCw, Database, HardDrive, 
+  Folder, Download, FileDown, Check 
+} from 'lucide-react';
 import { FORM_METAS } from '../forms/formDataPresets';
+import { getSavePathConfig } from '../services/storage';
+import { exportDocumentAsHwp } from '../services/exportService';
+import SavePathModal from './SavePathModal';
 
 export default function DocumentList({
   documents = [],
@@ -15,6 +22,13 @@ export default function DocumentList({
 }) {
   const [filterCode, setFilterCode] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPathModalOpen, setIsPathModalOpen] = useState(false);
+  const [savePathConfig, setSavePathConfig] = useState(getSavePathConfig());
+  const [exportingId, setExportingId] = useState(null);
+
+  useEffect(() => {
+    setSavePathConfig(getSavePathConfig());
+  }, []);
 
   const filteredDocs = documents.filter((doc) => {
     if (filterCode !== 'ALL' && doc.formCode !== filterCode) return false;
@@ -29,6 +43,24 @@ export default function DocumentList({
     return true;
   });
 
+  // 한글(HWP) 파일로 내보내기
+  const handleExportHwp = async (doc) => {
+    setExportingId(doc.id);
+    try {
+      const res = await exportDocumentAsHwp(doc);
+      if (res.method === 'filesystem') {
+        alert(`✅ 지정된 폴더 [${res.folderName}]에\n'${res.filename}' 한글(HWP) 문서가 성공적으로 저장되었습니다!`);
+      } else {
+        alert(`✅ '${res.filename}' 한글(HWP) 문서가 다운로드 폴더에 저장되었습니다.`);
+      }
+    } catch (err) {
+      console.error('HWP export error:', err);
+      alert('한글 문서 내보내기 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setExportingId(null);
+    }
+  };
+
   return (
     <div className="doc-list-container">
       <div className="doc-list-header">
@@ -40,9 +72,29 @@ export default function DocumentList({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 사용자 요청: 저장경로설정 버튼 */}
+            <button
+              type="button"
+              className="btn btn-xs btn-primary flex items-center gap-1.5 font-bold shadow-sm"
+              onClick={() => setIsPathModalOpen(true)}
+              title="내 컴퓨터 저장 폴더 지정 및 한글/PDF 저장 설정"
+              style={{
+                background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
+                color: 'white'
+              }}
+            >
+              <Folder size={13} className="text-amber-300" />
+              <span>저장경로설정</span>
+              {savePathConfig.folderName && (
+                <span className="text-[10px] bg-white/20 px-1 py-0.2 rounded font-normal truncate max-w-[100px]">
+                  📁 {savePathConfig.folderName}
+                </span>
+              )}
+            </button>
+
             <span className={`source-indicator ${storageSource === 'supabase' ? 'source-supabase' : 'source-local'}`}>
               {storageSource === 'supabase' ? <Database size={13} /> : <HardDrive size={13} />}
-              {storageSource === 'supabase' ? 'Supabase 클라우드 동기화 중' : '로컬 스토리지 모드'}
+              {storageSource === 'supabase' ? 'Supabase 클라우드' : '로컬 모드'}
             </span>
 
             <button
@@ -145,13 +197,30 @@ export default function DocumentList({
                   </span>
 
                   <div className="doc-card-actions">
+                    {/* 1. 한글(HWP) 파일 저장 */}
                     <button
                       className="btn-icon-action"
-                      title="불러와서 수정"
-                      onClick={() => onSelectDoc(doc)}
+                      style={{ color: '#0369a1', borderColor: '#bae6fd', background: '#f0f9ff', padding: '0.3rem 0.5rem' }}
+                      title="내 컴퓨터에 한글(HWP) 파일로 저장"
+                      disabled={exportingId === doc.id}
+                      onClick={() => handleExportHwp(doc)}
                     >
-                      <Edit3 size={15} />
+                      <span style={{ fontSize: '10px', fontWeight: 800, marginRight: '3px' }}>HWP</span>
+                      <Download size={13} className={exportingId === doc.id ? 'animate-spin' : ''} />
                     </button>
+
+                    {/* 2. PDF / 인쇄 저장 */}
+                    <button
+                      className="btn-icon-action"
+                      style={{ color: '#b91c1c', borderColor: '#fecaca', background: '#fef2f2', padding: '0.3rem 0.5rem' }}
+                      title="PDF로 저장 / 인쇄"
+                      onClick={() => onPrintDoc(doc)}
+                    >
+                      <span style={{ fontSize: '10px', fontWeight: 800, marginRight: '3px' }}>PDF</span>
+                      <Printer size={13} />
+                    </button>
+
+                    {/* 3. 복사하여 새 작성 */}
                     <button
                       className="btn-icon-action"
                       title="복사하여 새 작성"
@@ -159,13 +228,17 @@ export default function DocumentList({
                     >
                       <Copy size={15} />
                     </button>
+
+                    {/* 4. 불러와서 수정 */}
                     <button
                       className="btn-icon-action"
-                      title="바로 출력 / PDF"
-                      onClick={() => onPrintDoc(doc)}
+                      title="불러와서 수정"
+                      onClick={() => onSelectDoc(doc)}
                     >
-                      <Printer size={15} />
+                      <Edit3 size={15} />
                     </button>
+
+                    {/* 5. 삭제 */}
                     <button
                       className="btn-icon-action text-danger"
                       title="삭제"
@@ -184,6 +257,13 @@ export default function DocumentList({
           })
         )}
       </div>
+
+      {/* 저장경로설정 모달 */}
+      <SavePathModal
+        isOpen={isPathModalOpen}
+        onClose={() => setIsPathModalOpen(false)}
+        onPathUpdated={(newConfig) => setSavePathConfig(newConfig)}
+      />
     </div>
   );
 }

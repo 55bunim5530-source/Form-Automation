@@ -222,3 +222,41 @@ export async function deleteDocument(id) {
   }
   return true;
 }
+
+// ================= 저장 경로 및 내보내기 설정 =================
+const SAVE_PATH_CONFIG_KEY = 'safety_save_path_config_v1';
+
+let activeDirectoryHandle = null;
+
+export function getActiveDirectoryHandle() {
+  return activeDirectoryHandle;
+}
+
+export function setActiveDirectoryHandle(handle) {
+  activeDirectoryHandle = handle;
+}
+
+export function getSavePathConfig() {
+  try {
+    const raw = localStorage.getItem(SAVE_PATH_CONFIG_KEY);
+    if (!raw) {
+      return {
+        folderName: '',
+        customPathText: '',
+        preferredFormat: 'hwp'
+      };
+    }
+    return JSON.parse(raw);
+  } catch {
+    return { folderName: '', customPathText: '', preferredFormat: 'hwp' };
+  }
+}
+
+export function setSavePathConfig(config) {
+  try {
+    localStorage.setItem(SAVE_PATH_CONFIG_KEY, JSON.stringify(config));
+  } catch (e) {
+    console.error('Failed to save path config', e);
+  }
+}
+

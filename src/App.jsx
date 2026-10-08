@@ -6,9 +6,22 @@ import SupabaseSettingsModal from './components/SupabaseSettingsModal';
 import DefaultSettingsModal from './components/DefaultSettingsModal';
 
 import Form01_02_01 from './forms/Form01_02_01';
+import Form03_01_01 from './forms/Form03_01_01';
 import Form04_01_03 from './forms/Form04_01_03';
+import Form04_01_04 from './forms/Form04_01_04';
+import Form04_01_05 from './forms/Form04_01_05';
 import Form04_01_08 from './forms/Form04_01_08';
 import Form05_02_01 from './forms/Form05_02_01';
+import Form06_02_01 from './forms/Form06_02_01';
+import Form06_02_02 from './forms/Form06_02_02';
+import Form06_02_03 from './forms/Form06_02_03';
+import Form08_01_01 from './forms/Form08_01_01';
+import Form08_01_02 from './forms/Form08_01_02';
+import Form08_01_03 from './forms/Form08_01_03';
+import Form09_01_01 from './forms/Form09_01_01';
+import Form09_01_02 from './forms/Form09_01_02';
+import Form09_01_03 from './forms/Form09_01_03';
+import Form09_01_04 from './forms/Form09_01_04';
 import Form09_01_05 from './forms/Form09_01_05';
 import Form10_01_04 from './forms/Form10_01_04';
 
@@ -313,8 +326,29 @@ export default function App() {
                 onOpenSignature={handleOpenSignature}
               />
             )}
+            {activeFormCode === '03-01-01' && (
+              <Form03_01_01
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
             {activeFormCode === '04-01-03' && (
               <Form04_01_03
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '04-01-04' && (
+              <Form04_01_04
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '04-01-05' && (
+              <Form04_01_05
                 formData={formData}
                 onChange={setFormData}
                 onOpenSignature={handleOpenSignature}
@@ -329,6 +363,76 @@ export default function App() {
             )}
             {activeFormCode === '05-02-01' && (
               <Form05_02_01
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '06-02-01' && (
+              <Form06_02_01
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '06-02-02' && (
+              <Form06_02_02
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '06-02-03' && (
+              <Form06_02_03
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '08-01-01' && (
+              <Form08_01_01
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '08-01-02' && (
+              <Form08_01_02
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '08-01-03' && (
+              <Form08_01_03
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '09-01-01' && (
+              <Form09_01_01
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '09-01-02' && (
+              <Form09_01_02
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '09-01-03' && (
+              <Form09_01_03
+                formData={formData}
+                onChange={setFormData}
+                onOpenSignature={handleOpenSignature}
+              />
+            )}
+            {activeFormCode === '09-01-04' && (
+              <Form09_01_04
                 formData={formData}
                 onChange={setFormData}
                 onOpenSignature={handleOpenSignature}
