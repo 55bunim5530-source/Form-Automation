@@ -1,0 +1,42 @@
+{
+  "sourceTitle": "고소작업대 안전관리 매뉴얼",
+  "sourcePublisher": "고용노동부·안전보건공단",
+  "sourceDate": "2022-10-06",
+  "sourceUrl": "https://www.moel.go.kr/local/seoulseobu/news/notice/noticeView.do?bbs_seq=20221000275",
+  "sourceSha256": "8cca960600039acc0c55b2f6842c1e796df0475ee12460a7fcd3d12606f4c437",
+  "extraction": "Official PDF text extraction; relevant pages visually checked; manually curated semantic chunks",
+  "deduplication": "General fall-prevention language already present in the corpus was excluded. Only the missing anchorage location and operating checks specific to aerial work platforms were retained.",
+  "pages": [
+    {
+      "pdfPage": 25,
+      "referenceLabel": "PDF 25~26쪽 · 안전대 부착 위치",
+      "category": "aerial",
+      "searchTerms": [
+        "고소작업대 안전대",
+        "안전대 어디에 걸어",
+        "안전대 체결 위치",
+        "구조물 안전대 부착",
+        "작업대 안전대 부착",
+        "안전대 부착설비"
+      ],
+      "section": "시저형·자주식 고소작업대 안전대 부착 위치",
+      "text": "시저형 또는 자주식 고소작업대로 고소작업을 할 때에는 안전대와 안전모를 착용하고, 안전대는 구조물 또는 작업대에 마련된 안전대 부착설비에 부착한다. 안전난간을 밟고 올라서거나 작업대 밖의 구조물로 이동하지 않으며, 안전대 부착설비가 없거나 안전하게 체결할 수 없는 경우에는 작업을 시작하지 않고 적절한 추락방지조치를 먼저 마련한다."
+    },
+    {
+      "pdfPage": 37,
+      "referenceLabel": "PDF 37~38쪽 · 작업 전·중 점검",
+      "category": "aerial",
+      "searchTerms": [
+        "고소작업대 작업 전 점검",
+        "과상승방지장치",
+        "상승 상태 이동 금지",
+        "안전난간 점검",
+        "비상정지장치",
+        "작업구역 출입 통제"
+      ],
+      "section": "고소작업대 작업 전·중 핵심 점검",
+      "text": "작업 전에는 안전난간의 탈락·부식 여부와 과상승방지장치, 제어장치 연동구조, 비상하강장치, 경보장치 및 비상정지장치의 작동상태를 확인한다. 작업구역에는 관계 작업자 외의 출입을 통제하고 유도자를 배치한다. 작업대를 상승시킨 상태로 이동하지 않으며, 탑승 인원과 적재하중은 장비의 정격하중을 지킨다."
+    }
+  ],
+  "chunkCount": 2
+}

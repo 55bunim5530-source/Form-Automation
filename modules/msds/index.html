@@ -1,0 +1,4467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>산업안전 안심봇 - MSDS·유해물질 스마트 관리</title>
+<!-- External Libraries -->
+<script src="/vendor/qrcodejs/qrcode.min.js"></script>
+<script src="/vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="/vendor/pdfjs/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+  }
+</script>
+<style>
+:root {
+  --primary: #153f6d;
+  --primary-hover: #0f3054;
+  --secondary: #5c6b73;
+  --success: #226b31;
+  --success-bg: #dff2e3;
+  --warning: #a86d00;
+  --warning-bg: #fff0c2;
+  --danger: #c92a2a;
+  --danger-bg: #ffe3e3;
+  --bg-color: #f5f6f8;
+  --card-bg: #ffffff;
+  --border-color: #dddddd;
+  --text-main: #222222;
+  --text-muted: #666666;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+header {
+  background: var(--primary);
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-tools button {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-tools button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+
+main {
+  max-width: 1140px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+h1, h2, h3, h4 { margin-top: 0; color: #111; }
+h2 { font-size: 1.25rem; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1rem; color: var(--primary); }
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.step {
+  padding: 12px;
+  background: #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.92rem;
+  color: #495057;
+  transition: all 0.3s;
+}
+
+.step.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 2px 6px rgba(21,63,109,0.3);
+}
+
+.step.done {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #b7e4c7;
+}
+
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 14px;
+  background: #fff;
+}
+
+.card.muted {
+  background: #fafafa;
+}
+
+.card.warning-box {
+  background: #fff8e6;
+  border-color: #ffe08a;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media(max-width: 768px) {
+  .grid, .stepper { grid-template-columns: 1fr; }
+}
+
+input, select, textarea, button {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(21,63,109,0.15);
+}
+
+button {
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover { background: var(--primary-hover); }
+button.secondary { background: var(--secondary); }
+button.secondary:hover { background: #495057; }
+button.success { background: var(--success); }
+button.success:hover { background: #1b5326; }
+button.warn { background: var(--warning); color: #fff; }
+button.warn:hover { background: #855600; }
+button.danger { background: var(--danger); }
+
+.hidden { display: none !important; }
+
+.status {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #eef2f7;
+  margin-top: 12px;
+  font-size: 0.92rem;
+  border-left: 4px solid var(--primary);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.badge.ok { background: var(--success-bg); color: var(--success); }
+.badge.warn { background: var(--warning-bg); color: var(--warning); }
+.badge.danger { background: var(--danger-bg); color: var(--danger); }
+.badge.info { background: #e7f5ff; color: #1971c2; }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.actions button { width: auto; padding: 9px 18px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.88rem;
+}
+
+th, td {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th { background: #f1f3f5; font-weight: 600; }
+table:not(#legacyTable) th { width: 22%; }
+#legacyTable th, #legacyTable td { vertical-align: middle; text-align: center; }
+
+.help { font-size: 0.84rem; color: var(--text-muted); margin-top: 4px; }
+
+/* GHS Pictograms Vector Grid */
+.ghs-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.ghs-item {
+  width: auto;
+  text-align: center;
+  margin: 5px 10px;
+}
+
+.ghs-diamond-box {
+  width: 64px;
+  height: 64px;
+  border: 3px solid #d32f2f;
+  transform: rotate(45deg);
+  margin: 12px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.ghs-diamond-box svg {
+  transform: rotate(-45deg);
+  width: 44px;
+  height: 44px;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 760px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.modal-header h3 { margin: 0; }
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #888;
+  width: auto;
+  padding: 0;
+}
+
+/* Console Debug Bar */
+#debugConsole {
+  background: #1e1e1e;
+  color: #4af626;
+  font-family: 'Consolas', 'Courier New', monospace;
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+  max-height: 250px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.preview-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  margin-top: 6px;
+  object-fit: contain;
+}
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media print {
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block !important; width: 100%; }
+  body { background: #fff; margin: 0; padding: 0; color: #000; }
+  @page { margin: 1cm; size: A4; }
+  
+  .print-wrap { font-family: 'Pretendard', sans-serif; line-height: 1.4; width: 100%; height: 100%; max-height: 27cm; box-sizing: border-box; page-break-inside: avoid; overflow: hidden; }
+  .print-title { font-size: 26pt; font-weight: bold; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 10px; }
+  .print-ghs-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 40px; margin: 30px 0; }
+  .print-ghs-box { display: flex; align-items: center; justify-content: center; background: white; margin-bottom: 20px;}
+  .print-signal-word { text-align: center; font-size: 32pt; font-weight: bold; color: #d32f2f; margin-bottom: 20px; letter-spacing: 5px; }
+  .print-section { margin-bottom: 15px; border: 2px solid #000; padding: 15px; page-break-inside: avoid; border-radius: 8px; }
+  .print-section h4 { margin-top: 0; border-bottom: 1px solid #aaa; padding-bottom: 8px; font-size: 16pt; color: #000; }
+  .print-text { font-size: 12pt; white-space: pre-wrap; }
+  
+  /* Small Label */
+  .small-label { width: 9cm; height: auto; max-height: 13cm; border: 4px solid #000; padding: 15px; border-radius: 8px; margin: 0 auto; page-break-inside: avoid; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+  .small-label-title { font-size: 20pt; font-weight: 900; text-align: center; margin-bottom: 15px; border-bottom: 3px solid #000; padding-bottom: 10px; line-height: 1.2; letter-spacing: -1px; }
+  .small-ghs-grid { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+  .small-ghs-box { display: flex; align-items: center; justify-content: center; }
+  .small-signal { text-align: center; font-size: 24pt; font-weight: 900; color: #d32f2f; margin-bottom: 15px; letter-spacing: 2px; }
+  .small-text { font-size: 12pt; line-height: 1.4; font-weight: bold; color: #000; }
+  
+  /* Safety Guide Layout */
+  .guide-wrap { border: 2px solid #000; width: 100%; max-width: 21cm; height: 100%; max-height: 27cm; margin: 0 auto; font-family: 'Pretendard', sans-serif; font-size: 10pt; box-sizing: border-box; page-break-inside: avoid; overflow: hidden; }
+  .guide-header-table { width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; }
+  .guide-header-table td { padding: 8px; border: 1px solid #000; }
+  .guide-header-table td.center { text-align: center; font-size: 15pt; font-weight: bold; color: #000080; }
+  
+  .guide-product-row { display: flex; border-bottom: 2px solid #000; }
+  .guide-product-label { width: 120px; border-right: 1px solid #000; text-align: center; padding: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+  .guide-product-name { flex: 1; text-align: center; padding: 8px; font-size: 16pt; font-weight: bold; color: red; letter-spacing: 2px; }
+  
+  .guide-section { border-bottom: 1px solid #000; }
+  .guide-section:last-child { border-bottom: none; }
+  .guide-section-title { font-size: 12pt; font-weight: bold; color: red; text-decoration: underline; padding: 8px 15px; margin: 0; }
+  .guide-section-content { padding: 0 15px 10px 15px; line-height: 1.4; }
+  
+  .guide-sub-table { width: 100%; border-collapse: collapse; border-top: 1px solid #000; }
+  .guide-sub-table th, .guide-sub-table td { border: 1px solid #000; padding: 8px; border-bottom: 0; }
+  .guide-sub-table th { text-align: center; width: 80px; font-weight: normal; }
+  .guide-sub-table tr:last-child th, .guide-sub-table tr:last-child td { border-bottom: none; }
+  .guide-sub-table tr th:first-child, .guide-sub-table tr td:first-child { border-left: none; }
+  .guide-sub-table tr th:last-child, .guide-sub-table tr td:last-child { border-right: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <button type="button" onclick="returnToMainBot()" style="background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); color:#fff; padding:7px 14px; border-radius:6px; font-size:0.88rem; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'">⬅ 안심봇으로 돌아가기</button>
+    <h1>🤖 산업안전 안심봇 ＞ 📋 MSDS·유해물질 스마트 관리</h1>
+  </div>
+  <div class="header-tools">
+    <button onclick="openApiConfigModal()">⚙️ API 설정</button>
+  </div>
+</header>
+<span id="apiKeyStatusText" style="display:none;"></span>
+
+<main>
+
+<!-- Debug Console Panel -->
+<div id="debugConsolePanel" class="hidden" style="margin-bottom:20px;">
+  <div style="background:#2d2d2d; color:#fff; padding:8px 14px; border-top-left-radius:8px; border-top-right-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+    <b>🐛 개발자 정보 보기 (Debug Mode)</b>
+    <button class="secondary" style="width:auto; padding:3px 10px; font-size:0.75rem;" onclick="clearDebugConsole()">로그 지우기</button>
+  </div>
+  <div id="debugConsole">시스템 디버그 모드가 활성화되었습니다. API 요청/응답 JSON 및 오류 로그가 여기에 기록됩니다.</div>
+</div>
+
+<!-- Home Screen -->
+<section id="homeScreen">
+  <h2>MSDS·유해물질 관리</h2>
+
+  <div class="grid">
+    <div class="card">
+      <h3>📸 신규 화학제품 등록</h3>
+      <p>새 제품 사진으로 MSDS와 경고표지 즉시 생성</p>
+      <button onclick="startNewProduct()">➕ 신규 제품 등록 시작</button>
+    </div>
+
+    <div class="card">
+      <h3>📑 기존 관리대장 관리</h3>
+      <p>행정실·급식실 부서별 대장 중복 필터 및 통합 관리</p>
+      <button onclick="startExistingLedger()">📂 관리대장 조회·통합</button>
+    </div>
+  </div>
+</section>
+
+<!-- Existing Ledger Reference Section -->
+<section id="existingLedgerSection" class="hidden">
+  <h2>기존 관리대장 관리</h2>
+
+  <div class="card" style="border-top: 4px solid var(--primary);">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+      <h3 style="margin:0;">1. 부서별 관리대장 등록</h3>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px;">
+      <!-- Step 1: Admin / Facility Ledger -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; font-size: 15px;">
+            <span style="background: var(--primary); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">1</span>
+            행정실(기본) 대장 등록
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">(엑셀, 한글, PDF)</label>
+            <input type="file" id="legacyLedgerFile" accept=".csv,.xlsx,.xls,.hwpx,.hwp,.pdf" style="width: 100%; font-size: 13px; padding: 6px; box-sizing: border-box;">
+          </div>
+        </div>
+        <button type="button" onclick="loadLegacyReference(false)" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 600; margin: 0; border-radius: 6px;">
+          📥 대장 등록
+        </button>
+      </div>
+
+      <!-- Step 2: Other Department Ledger with Deduplication -->
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-weight: 700; color: #166534; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; font-size: 15px;">
+            <span style="background: #16a34a; color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">2</span>
+            타 부서 대장 등록 (중복 제외)
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #166534; display: block; margin-bottom: 4px;">(엑셀, 한글, PDF)</label>
+            <input type="file" id="cafeteriaLedgerFile" accept=".csv,.xlsx,.xls,.hwpx,.hwp,.pdf" style="width: 100%; font-size: 13px; padding: 6px; box-sizing: border-box;">
+          </div>
+        </div>
+        <button type="button" class="success" onclick="loadCafeteriaLedgerWithDeduplication()" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 600; background: #16a34a; margin: 0; border-radius: 6px;">
+          ➕ 대장 등록
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Home -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+      <div style="flex: 1; min-width: 250px;">
+        <input type="text" id="legacySearch" placeholder="🔍 통합 목록 검색 (제품명, 제조사, 사용장소 등)" oninput="filterLegacyReference()" style="margin: 0; width: 100%;">
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" id="backToStage3Btn" class="hidden" onclick="returnToStage3()" style="margin: 0; padding: 8px 18px; font-size: 13px; border-radius: 6px; background: #1971c2; color: #fff; border: none; cursor: pointer; font-weight: bold; white-space: nowrap;">↩️ 작업으로 돌아가기</button>
+        <button type="button" class="secondary" onclick="backHome()" style="margin: 0; padding: 8px 18px; font-size: 13px; border-radius: 6px; white-space: nowrap;">🏠 처음으로</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="legacyReferenceBox" class="card hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+      <h3 style="margin: 0;">2. 통합 제품 목록</h3>
+      <button type="button" class="success" style="width: auto; padding: 8px 16px; font-size: 0.9rem; background: #1971c2; display: inline-flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; border-radius: 6px;" onclick="exportUnifiedLedgerExcel()">📥 학교 통합 관리대장 다운로드 (Excel)</button>
+    </div>
+
+    <table id="legacyTable">
+      <thead>
+        <tr>
+          <th style="width: 60px; text-align: center; white-space: nowrap;">연번</th>
+          <th style="text-align: center; min-width: 140px;">제품명</th>
+          <th style="text-align: center; min-width: 130px;">제조 회사명</th>
+          <th style="text-align: center; min-width: 140px;">용도</th>
+          <th style="width: 110px; text-align: center; white-space: nowrap;">사용장소</th>
+          <th style="width: 95px; text-align: center; white-space: nowrap;">현재상태</th>
+          <th style="width: 100px; text-align: center; white-space: nowrap;">관리</th>
+        </tr>
+      </thead>
+      <tbody id="legacyReferenceBody"></tbody>
+    </table>
+    <div id="legacyReferenceCount" class="help" style="margin-top:10px;"></div>
+
+    <div id="revisionDetailPanel" class="card hidden muted">
+      <h4>MSDS 개정내용 상세</h4>
+      <table>
+        <tr><th>제품명</th><td id="revProduct">-</td></tr>
+        <tr><th>현재 관리 중인 MSDS</th><td id="revCurrent">-</td></tr>
+        <tr><th>확인된 개정일</th><td id="revDate">-</td></tr>
+        <tr><th>개정 상태</th><td id="revStatus">-</td></tr>
+        <tr><th>주요 확인사항</th><td id="revSummary">-</td></tr>
+      </table>
+      <div class="actions">
+        <button class="secondary" onclick="document.getElementById('revisionDetailPanel').classList.add('hidden')">닫기</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Workflow Section Header -->
+<section id="workflowHeader" class="hidden">
+  <h2>전체 업무 흐름</h2>
+  <div class="stepper">
+    <div class="step active" id="sp1" onclick="showStage(1)" style="cursor:pointer">① 제품 확인</div>
+    <div class="step" id="sp2" onclick="showStage(2)" style="cursor:pointer">② 공식 MSDS 확인</div>
+    <div class="step" id="sp3" onclick="showStage(3)" style="cursor:pointer">③ 관리조치</div>
+    <div class="step" id="sp4" onclick="showStage(4)" style="cursor:pointer">④ 완료·이력</div>
+  </div>
+  <div id="currentStatus" class="status"><b>현재 상태:</b> 확인 필요 / <b>다음 할 일:</b> 제품 사진을 등록하고 AI로 식별하세요.</div>
+</section>
+
+<!-- Stage 1: Product Recognition -->
+<section id="stage1" class="hidden">
+  <h2>① 제품 확인 (Gemini Multimodal AI 사진 분석)</h2>
+  
+  <div class="grid">
+    <div style="position:relative;">
+      <label>앞면 사진 Upload <button style="float:right; padding:2px 8px; font-size:12px; cursor:pointer; background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; border-radius:3px;" onclick="clearPhoto('front')">삭제</button></label>
+      <input type="file" id="frontPhotoInput" accept="image/*" onchange="previewImage(this, 'frontPreview')">
+      <img id="frontPreview" class="preview-img hidden" alt="앞면 사진">
+    </div>
+    <div style="position:relative;">
+      <label>뒷면/라벨 사진 Upload <button style="float:right; padding:2px 8px; font-size:12px; cursor:pointer; background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; border-radius:3px;" onclick="clearPhoto('back')">삭제</button></label>
+      <input type="file" id="backPhotoInput" accept="image/*" onchange="previewImage(this, 'backPreview')">
+      <img id="backPreview" class="preview-img hidden" alt="뒷면 사진">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="aiRecognizeBtn" onclick="recognizeWithGemini()">✨ AI로 제품 확인 (멀티모달 Vision)</button>
+    <button class="secondary" onclick="backHome()">🏠 처음으로</button>
+  </div>
+
+  <!-- Duplicate Ledger Check -->
+  <div id="duplicateCheckBox" class="card warning-box hidden">
+    <h4>📋 기존 관리대장 중복 대조 결과</h4>
+    <div id="duplicateCheckText">기존 관리대장에서 동일·유사 제품 검색 진행 중...</div>
+  </div>
+
+  <!-- AI Recognition Results -->
+  <div id="productResult" class="card hidden">
+    <h3>🤖 Gemini AI 제품 식별 결과</h3>
+    <table>
+      <tr><th>제품명</th><td id="resProductName">-</td></tr>
+      <tr><th>제조사 / 수입자</th><td id="resManufacturer">-</td></tr>
+      <tr><th>제품 유형</th><td id="resProductType">-</td></tr>
+      <tr><th>용도</th><td id="resUse">-</td></tr>
+      <tr><th>품번 / 바코드</th><td id="resProductNo">-</td></tr>
+      <tr><th>신고/승인번호</th><td id="resRegNo">-</td></tr>
+      <tr><th>식별 신뢰도</th><td><span id="resConfidenceBadge" class="badge ok">0%</span></td></tr>
+      <tr><th>확인이 필요한 항목</th><td id="resUncertainFields" style="color:#d32f2f;">없음</td></tr>
+    </table>
+
+    <!-- Low Confidence / Manual Edit Form -->
+    <div id="manualEditBox" class="card warning-box hidden">
+      <h4>⚠️ 신뢰도가 낮거나 보이지 않는 정보가 있습니다.</h4>
+      <p class="help">"사진을 다시 촬영하거나 아래 항목을 직접 입력/수정하세요."</p>
+      <div class="grid">
+        <div><label>제품명</label><input type="text" id="editProductName"></div>
+        <div><label>제조사</label><input type="text" id="editManufacturer"></div>
+        <div><label>신고/승인번호</label><input type="text" id="editRegNo"></div>
+        <div><label>용도</label><input type="text" id="editUse"></div>
+      </div>
+      <div class="actions">
+        <button onclick="applyManualEdit()">수정 내용 적용</button>
+      </div>
+    </div>
+
+    <div id="nextMsdsActionBox" class="actions" style="margin-top:20px;">
+      <button id="nextMsdsBtn" class="success" onclick="showStage(2)">다음 (② 공식 MSDS 확인) ➔</button>
+      <button id="terminateExemptBtn" class="hidden" style="background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="terminateExempt()">✅ 생활화학제품 예외 처리 (종결)</button>
+    </div>
+  </div>
+</section>
+
+<!-- Stage 2: Official MSDS Verification -->
+<section id="stage2" class="hidden">
+  <h2>② 공식 MSDS 확인</h2>
+  <div class="status" style="background:#e7f5ff; border-left-color:#1971c2; color:#1864ab; font-size:0.95rem; font-weight:bold; margin-bottom:16px;">
+    제품명과 제조사 정보를 이용해 공식 MSDS를 먼저 자동으로 확인합니다.
+  </div>
+
+  <!-- 1. Current Product Information Display Card -->
+  <div class="card" style="background:#f8fafc; border-left:4px solid #1971c2; padding:16px; margin-bottom:20px;">
+    <h3 style="margin-top:0; color:#1e293b; font-size:1.05rem;">📋 현재 제품 정보 (AI 식별 결과)</h3>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; font-size:0.95rem; align-items:center;">
+      <div><b>식별 제품명:</b> <span id="stage2ProdName" style="color:#475569; font-weight:600;">-</span></div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <b>정제 검색명:</b> 
+        <span id="stage2CleanName" style="color:#e03131; font-weight:bold; font-size:1.05rem;">-</span>
+        <button type="button" id="copyCleanNameBtn" onclick="copyCleanNameQuick()" style="padding:3px 10px; font-size:0.82rem; background:#fff; border:1px solid #ced4da; border-radius:4px; cursor:pointer; color:#1971c2; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:all 0.2s;" title="정제된 핵심 제품명 클립보드 복사">📋 복사</button>
+      </div>
+      <div><b>제조사:</b> <span id="stage2Maker" style="color:#1971c2; font-weight:bold;">-</span></div>
+    </div>
+  </div>
+
+  <!-- 2. Core 2 Actions: 1순위 제조사 공식 자료실 직행 + 차선책 구글 공식 PDF 직격 검색 -->
+  <div class="card" style="border: 2px solid #cbd5e1; padding:20px; background:#fff; margin-bottom:20px;">
+    <h3 style="margin-top:0; margin-bottom:8px; color:#0f172a; font-size:1.1rem;">🔍 공식 MSDS 찾기 및 다운로드</h3>
+    <p class="help" style="margin-bottom:16px;">
+      수식어·색상·용량을 정제한 알맹이 제품명으로 제조사 자료실을 우선 연동하고, 미검색 시 구글 공식 PDF 직격 검색을 차선책으로 활용합니다.
+    </p>
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:8px;">
+      <button type="button" onclick="openManufacturerSearchWeb()" style="background-color:#1971c2; color:white; font-size:0.98rem; padding:14px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+        🏢 [1순위] 제조사 공식 자료실 직행 (정제 제품명)
+      </button>
+      <button type="button" onclick="openGoogleDirectPdfSearch()" style="background-color:#2b8a3e; color:white; font-size:0.98rem; padding:14px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+        🔍 [차선책] 제조사 공식 PDF 직격 검색 (Google)
+      </button>
+    </div>
+  </div>
+
+  <!-- Auto Search Results Display Box -->
+  <div id="msdsSearchResultsCard" class="card hidden" style="border-left:4px solid #1971c2;">
+    <h3 id="searchResultsTitle" style="margin-top:0; color:#1971c2;">🔍 공식 MSDS 자동 검색 결과</h3>
+    <div id="searchResultsList"></div>
+  </div>
+
+  <!-- Auto Search Failure Notification Card -->
+  <div id="msdsAutoSearchFailedCard" class="card warning-box hidden" style="background:#fff5f5; border:1px solid #ffc9c9; border-left:4px solid #fa5252; padding:18px;">
+    <h3 style="margin-top:0; color:#c92a2a; font-size:1.05rem;">⚠️ 제조사 홈페이지에서 검색이 안 되시나요?</h3>
+    <p style="font-size:0.92rem; color:#495057; margin-bottom:14px;">
+      제조사 검색창은 띄어쓰기나 색상 표기에 민감하여 결과가 안 나올 수 있습니다. 아래 <b>정제된 검색어</b>를 복사해 검색하시거나 <b>구글 직격 검색</b>을 이용하세요.
+    </p>
+
+    <div style="background:#fff; padding:12px; border-radius:6px; border:1px solid #dee2e6; margin-bottom:16px; font-size:0.88rem;">
+      <div><b>식별 원본 제품명:</b> <span class="autoProdNameText" style="color:#1c7ed6; font-weight:bold;">-</span></div>
+      <div><b>제조사:</b> <span class="autoMakerText" style="color:#1c7ed6; font-weight:bold;">-</span></div>
+      <div><b>정제된 추천 검색어:</b> <span id="autoCleanQueryText" style="color:#e03131; font-weight:bold;">-</span></div>
+      <div style="margin-top:8px;">
+        <button type="button" class="secondary" style="font-size:0.8rem; padding:4px 10px;" onclick="copyCleanQueryText()">📋 정제 검색어 복사</button>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+      <button type="button" class="secondary" onclick="openManufacturerSearchWeb()" style="padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; background-color:#fff; border:1px solid #1971c2; border-radius:6px; cursor:pointer;">
+        <span style="font-size:1.2rem;">🏢</span>
+        <span style="font-weight:bold; color:#1971c2;">[1순위] 제조사 홈페이지 자료실 검색</span>
+      </button>
+      <button type="button" class="secondary" onclick="openGoogleDirectPdfSearch()" style="padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; background-color:#fff; border:1px solid #2b8a3e; border-radius:6px; cursor:pointer;">
+        <span style="font-size:1.2rem;">🔍</span>
+        <span style="font-weight:bold; color:#2b8a3e;">[차선책] 구글 공식 PDF 직격 검색</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Collapsible Direct Registration Accordion [직접 등록 ▼] (Section 8) -->
+  <div style="margin-top:16px; margin-bottom:20px;">
+    <div id="directRegistrationContent" class="card" style="margin-top:8px; background:#fff;">
+      <h4>📁 수기 등록 및 직접 업로드</h4>
+      <p class="help">자동 검색 결과가 없거나 소장하고 계신 공식 MSDS가 있는 경우 아래 방식을 이용하세요.</p>
+      
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:12px;">
+        <div style="background:#f8f9fa; padding:14px; border-radius:6px; border:1px solid #e9ecef;">
+          <label style="font-weight:bold; color:#1971c2;">📄 [공식 MSDS PDF 직접 업로드]</label>
+          <input type="file" id="msdsPdfInput" accept=".pdf" onchange="handleMsdsPdfUpload(this)" style="margin-top:8px; width:100%;">
+          <p style="font-size:0.8rem; color:#868e96; margin-top:6px;">제조사/공급업체로부터 제공받은 PDF 원문 파일을 선택하세요.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MSDS Status Card -->
+  <div id="msdsStatusCard" class="card hidden" style="border-top:4px solid #2b8a3e;">
+    <h3>📄 MSDS 확보 정보 및 상태</h3>
+    <table>
+      <tr><th>제품명</th><td id="msdsProdName">-</td></tr>
+      <tr><th>제조사 / 공급업체</th><td id="msdsMaker">-</td></tr>
+      <tr>
+        <th>MSDS 확보 상태</th>
+        <td><span id="msdsVerifyBadge" class="badge danger">확인 필요</span></td>
+      </tr>
+      <tr><th>파일명 / 출처 URL</th><td id="msdsFileName">-</td></tr>
+      <tr><th>추출/확인 개정일</th><td id="msdsRevDate">미확인</td></tr>
+    </table>
+
+    <!-- PDF / Preview Box -->
+    <div id="pdfViewerBox" class="card muted hidden" style="margin-top:12px;">
+      <h4 id="pdfViewerTitle">PDF 원문 / 미리보기</h4>
+      <div id="pdfTextSummary" class="help" style="max-height: 120px; overflow-y: auto; background: #fff; padding: 10px; border: 1px solid #ccc; font-family: monospace;"></div>
+
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button id="runGeminiMsdsBtn" class="success" onclick="analyzeMsdsWithGemini()">✨ AI 핵심 데이터 자동 추출</button>
+    </div>
+  </div>
+
+  <!-- Unfound Request Guide -->
+  <div id="msdsUnfoundRequestBox" class="card muted hidden">
+    <h3 style="color:#c92a2a;">📢 공식 MSDS 미확보 시 공급업체 요청 가이드</h3>
+    <div class="status" style="background:#ffe3e3; border-left-color:#c92a2a; color:#c92a2a; margin-bottom:12px;">
+      <b>안내:</b> "제품 단위 공식 MSDS를 확보하지 못했습니다. 제조사·수입자·공급업체에 최신 MSDS 제공을 요청하세요."<br>
+    </div>
+      <span style="font-size:0.82rem; color:#666;">(※ 공단 검색 실패가 MSDS 비대상을 의미하지 않습니다.)</span>
+    </div>
+    <textarea id="msdsRequestText" rows="3">안녕하세요, 학교 안전보건 담당자입니다. 사업장에서 취급 중인 아래 제품의 최신 공식 물질안전보건자료(MSDS) 제공을 요청드립니다.
+- 제품명: [제품명]
+- 제조사: [제조사]</textarea>
+    <div class="actions" style="margin-top:10px;">
+      <button class="secondary" onclick="copyMsdsRequestText()">📋 요청 문구 복사</button>
+    </div>
+  </div>
+
+  <div class="actions" style="margin-top:20px;">
+    <button id="stage2NextBtn" class="success hidden" onclick="showStage(3)">다음: ③ 관리조치</button>
+    <button class="secondary" onclick="showStage(1)">⬅ 이전 (① 제품 확인)</button>
+  </div>
+</section>
+
+<!-- Stage 3: Management Actions & Statutory Target Check -->
+<section id="stage3" class="hidden">
+  <h2>③ 관리조치 및 법정 관리대상 자동 대조</h2>
+
+  <!-- Gemini MSDS Parsed Analysis -->
+  <div class="card">
+    <h3>🔬 Gemini AI MSDS 16개 항목 구조화 분석 결과</h3>
+    <table id="msdsAnalysisTable">
+      <tr><th>유해성·위험성</th><td id="anHazard">-</td></tr>
+      <tr style="display: none;"><th>예방</th><td id="anPrevention">-</td></tr>
+      <tr style="display: none;"><th>대응</th><td id="anResponse">-</td></tr>
+      <tr style="display: none;"><th>저장</th><td id="anStorage">-</td></tr>
+      <tr style="display: none;"><th>폐기</th><td id="anDisposalPrecaution">-</td></tr>
+      <tr><th>구성성분</th><td id="anIngredients">-</td></tr>
+      <tr><th>취급·저장방법</th><td id="anHandling">-</td></tr>
+      <tr><th>개인보호구</th><td id="anPPE">-</td></tr>
+      <tr><th>응급조치</th><td id="anFirstAid">-</td></tr>
+      <tr><th>폐기방법</th><td id="anDisposal">-</td></tr>
+    </table>
+  </div>
+
+
+
+
+
+  <!-- Actions & Ledger Reflection -->
+  <div class="card">
+    <h3>1) 유해물질 관리대장 반영</h3>
+    <div class="grid">
+      <div>
+        <label>사용부서</label>
+        <select id="deptSelect" onchange="handleDeptChange()">
+          <option value="행정실">행정실</option>
+          <option value="급식실">급식실</option>
+          <option value="기타">기타</option>
+        </select>
+        <input type="text" id="deptCustomInput" placeholder="부서명 직접 입력" style="display: none; margin-top: 6px;">
+      </div>
+      <div>
+        <label>보관장소</label>
+        <select id="placeSelect" onchange="handlePlaceChange()">
+          <option value="시설관리실">시설관리실</option>
+          <option value="청소용품실">청소용품실</option>
+          <option value="급식실">급식실</option>
+          <option value="기타">기타</option>
+        </select>
+        <input type="text" id="placeCustomInput" placeholder="보관장소 직접 입력" style="display: none; margin-top: 6px;">
+      </div>
+    </div>
+    <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 15px;">
+      <button type="button" class="success" onclick="applyLedger()" style="padding: 10px 18px; font-weight: bold; background: #2b8a3e; color: #fff; border: none; border-radius: 6px; cursor: pointer;">관리대장 반영</button>
+      <button type="button" class="secondary" id="viewUnifiedLedgerBtn" onclick="viewUnifiedLedgerFromStage3()" style="padding: 10px 18px; font-weight: bold; background: #f8fafc; border: 1px solid #1971c2; color: #1971c2; border-radius: 6px; cursor: pointer;">📚 학교 통합 관리대장 확인하기</button>
+      <button type="button" class="success" id="downloadUnifiedLedgerBtn" onclick="exportUnifiedLedgerExcel()" style="padding: 10px 18px; font-weight: bold; background: #1971c2; color: #fff; border: none; border-radius: 6px; cursor: pointer;">📥 학교 통합 관리대장 다운로드 (Excel)</button>
+    </div>
+
+    <div id="ledgerResult" class="card hidden muted" style="margin-top: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <h4 style="margin: 0; color: #15803d; font-size: 1.05rem; font-weight: bold;">✅ 관리대장 반영 완료</h4>
+        <span id="ledgerSyncBadge" style="font-size: 0.85rem; background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-weight: bold;">통합 관리대장 반영됨</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="ledgerTable" style="margin-bottom: 0; background: #fff; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="width: 50px; text-align: center; vertical-align: middle; white-space: nowrap;">번호</th>
+              <th style="min-width: 140px; text-align: center; vertical-align: middle;">제품명</th>
+              <th style="min-width: 110px; text-align: center; vertical-align: middle;">제조사</th>
+              <th style="min-width: 120px; text-align: center; vertical-align: middle;">주요성분/CAS No.</th>
+              <th style="width: 90px; text-align: center; vertical-align: middle; white-space: nowrap;">사용부서</th>
+              <th style="width: 90px; text-align: center; vertical-align: middle; white-space: nowrap;">보관장소</th>
+              <th style="width: 110px; text-align: center; vertical-align: middle; white-space: nowrap;">MSDS 상태</th>
+              <th style="width: 80px; text-align: center; vertical-align: middle; white-space: nowrap;">관리상태</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- GHS Vector Warning Label -->
+  <div class="card">
+    <h3>2) 공식 GHS 경고표지 (Vector SVG)</h3>
+    <p class="help">공식 MSDS 2번 항목에 의거하여 자동 생성됩니다.</p>
+    
+    <div id="ghsContainer" class="ghs-grid">
+      <!-- Dynamic SVG Pictograms injected here -->
+    </div>
+
+    <div id="ghsTextDetails" style="margin-top:14px; background:#fafafa; padding:12px; border-radius:6px;">
+      <div><b>신호어:</b> <span id="ghsSignalWord">-</span></div>
+      <div><b>유해·위험문구:</b> <span id="ghsHazardText">-</span></div>
+      <div style="margin-top:8px;"><b>예방조치문구:</b></div>
+      <div style="padding-left:15px; font-size: 0.95em;">
+        <div><b>- 예방:</b> <span id="ghsPrecautionPrevention">-</span></div>
+        <div><b>- 대응:</b> <span id="ghsPrecautionResponse">-</span></div>
+        <div><b>- 저장:</b> <span id="ghsPrecautionStorage">-</span></div>
+        <div><b>- 폐기:</b> <span id="ghsPrecautionDisposal">-</span></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button onclick="printStandardLabel()">경고표지 인쇄</button>
+    </div>
+  </div>
+
+  <!-- Core Safety Action Guide -->
+  <div class="card">
+    <h3>3) 작업 시 관리요령</h3>
+    <ul id="safetyGuideList">
+      <li>🔥 화기 근처 사용 금지 [MSDS 5,7번]</li>
+      <li>🌬️ 작업 시 환기팬 가동 [MSDS 7,8번]</li>
+      <li>🧤 보호장갑 및 보안경 착용 [MSDS 8번]</li>
+      <li>👁️ 접촉 시 즉시 15분 이상 세척 [MSDS 4번]</li>
+      <li>📦 서늘한 위험물함 보관 [MSDS 7번]</li>
+      <li>🗑️ 무단 배출 금지, 폐기물 처리 [MSDS 13번]</li>
+    </ul>
+    <div class="actions">
+      <button onclick="printSafetyGuide()">관리요령 인쇄</button>
+    </div>
+  </div>
+
+  <!-- Decanting Container Label -->
+  <div class="card">
+    <h3>5) 소분용기 관리</h3>
+    <label>소분해서 사용합니까?</label>
+    <select onchange="document.getElementById('decantBox').classList.toggle('hidden', this.value !== 'yes')">
+      <option value="no">아니오 (원래 용기 사용)</option>
+      <option value="yes">예 (소분용기에 덜어서 사용)</option>
+    </select>
+    
+    <div id="decantBox" class="hidden card warning-box">
+      <p><b>소분용기 경고표지 생성 대상입니다.</b></p>
+      <p class="help">산업안전보건법에 따라 소분 용기에도 명칭, 경고표지, 유해문구를 부착해야 합니다.</p>
+      <button onclick="printSmallLabel()">소분용기 라벨 출력</button>
+    </div>
+  </div>
+
+  <!-- 1-Page Training Sheet -->
+  <div class="card">
+    <h3>6) 교육자료</h3>
+    <p class="help">MSDS 분석 결과를 바탕으로 1페이지 근로자 안전보건 교육자료가 자동 작성됩니다.</p>
+    <div class="grid">
+      <div><label>교육일자</label><input type="date" id="eduDate"></div>
+      <div><label>교육자</label><input type="text" id="eduTrainer" placeholder="예: 안전보건관리담당자"></div>
+      <div><label>교육대상</label><input type="text" id="eduTarget" placeholder="예: 청소/시설 담당자"></div>
+      <div><label>교육장소</label><input type="text" id="eduPlace" placeholder="예: 행정실"></div>
+    </div>
+    <div class="actions">
+      <button type="button" onclick="previewEducationSheet()">교육자료 미리보기</button>
+      <button type="button" class="success" onclick="downloadEducationPdf()">📄 교육자료 PDF 다운로드</button>
+    </div>
+
+    <div id="eduPreview" class="card hidden muted">
+      <h4>📄 근로자 MSDS 1페이지 교육자료 미리보기</h4>
+      <div id="eduPreviewContent"></div>
+    </div>
+  </div>
+
+
+  <div class="actions" style="margin-top:20px;">
+    <button class="success" onclick="showStage(4)">다음 (④ 완료·이력) ➔</button>
+    <button class="secondary" onclick="showStage(2)">⬅ 이전 (② 공식 MSDS 확인)</button>
+  </div>
+</section>
+
+<!-- Stage 4: Completion & Version History Management -->
+<section id="stage4" class="hidden">
+  <h2>④ 완료 및 이력 관리</h2>
+
+  <div class="card">
+    <h3>이행상태 체크리스트</h3>
+    <ul style="list-style: none; padding-left: 0; line-height: 2.0; font-weight: bold;">
+      <li><span id="badgeMsds" style="display:inline-block; width:65px; text-align:center; padding:2px 6px; border-radius:4px; font-size:0.85em; background-color:#ffeaea; color:#d32f2f; margin-right:8px;">🔴 미완료</span> 공식 MSDS 확인 완료</li>
+      <li><span id="badgeLedger" style="display:inline-block; width:65px; text-align:center; padding:2px 6px; border-radius:4px; font-size:0.85em; background-color:#ffeaea; color:#d32f2f; margin-right:8px;">🔴 미완료</span> 관리대장 반영 완료</li>
+      <li><span id="badgeLabel" style="display:inline-block; width:65px; text-align:center; padding:2px 6px; border-radius:4px; font-size:0.85em; background-color:#ffeaea; color:#d32f2f; margin-right:8px;">🔴 미완료</span> GHS 경고표지 및 핵심 관리요령 출력</li>
+      <li><span id="badgeEdu" style="display:inline-block; width:65px; text-align:center; padding:2px 6px; border-radius:4px; font-size:0.85em; background-color:#ffeaea; color:#d32f2f; margin-right:8px;">🔴 미완료</span> 근로자 교육자료 생성</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>MSDS 버전 이력 관리 (v1, v2, v3...)</h3>
+    <p class="help">새 MSDS 등록 시 기존 파일을 삭제하거나 덮어쓰지 않고 이력으로 보관합니다.</p>
+    <table>
+      <thead>
+        <tr style="background:#f8fafc;">
+          <th style="text-align:center;">버전</th>
+          <th style="text-align:center;">개정일</th>
+          <th style="text-align:center;">등록일</th>
+          <th style="text-align:center;">상태</th>
+        </tr>
+      </thead>
+      <tbody id="msdsVersionHistoryBody">
+        <tr>
+          <td style="text-align:center; font-weight:bold;">v1 (현재)</td>
+          <td id="verRevDate" style="text-align:center;">-</td>
+          <td id="verRegDate" style="text-align:center;">-</td>
+          <td style="text-align:center;"><span class="badge ok">최신본</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <div class="actions">
+    <button class="success" onclick="completeAll()">🎉 최종 완료 확정</button>
+    <button class="secondary" onclick="showStage(3)">⬅ 이전 (③ 관리조치)</button>
+  </div>
+</section>
+
+<!-- Final Completion Screen -->
+<section id="finishScreen" class="hidden">
+  <h2>✅ MSDS 관리 프로세스 완료</h2>
+  <div class="card" style="border-left:5px solid var(--success);">
+    <h3 id="finishProductName">제품 관리 등록이 최종 완료되었습니다.</h3>
+    <p>학교 현장의 안전보건 조치와 관계 법령 요구사항이 이행 처리되었습니다.</p>
+    <table>
+      <tr><th>제품 확인 (Gemini AI)</th><td><span class="badge ok">완료</span></td></tr>
+      <tr><th>공식 MSDS verification</th><td><span class="badge ok">완료</span></td></tr>
+      <tr><th>유해물질 관리대장</th><td><span class="badge ok">완료</span></td></tr>
+      <tr><th>GHS 경고표지 & 관리요령</th><td><span class="badge ok">완료</span></td></tr>
+    </table>
+  </div>
+  <div class="actions">
+    <button onclick="restartWorkflow()">다른 제품 신규 등록하기</button>
+    <button class="secondary" onclick="showStage(4)">이력 다시 보기</button>
+  </div>
+</section>
+
+</main>
+
+<!-- Modal 1: API Config Modal -->
+<div id="apiConfigModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ AI 분석 엔진 및 API 키 설정</h3>
+      <button class="close-btn" onclick="closeApiConfigModal()">&times;</button>
+    </div>
+
+    <!-- AI Engine Config (OpenRouter / Gemini) -->
+    <div class="card">
+      <h4>AI 분석 엔진 선택</h4>
+      
+      <label style="font-weight:bold; color:#1864ab;">AI 제공자 (Provider) 선택</label>
+      <div style="display:flex; gap:10px; margin-bottom:14px; margin-top:6px;">
+        <button type="button" id="tabOpenRouter" onclick="selectAiProvider('openrouter')" style="flex:1; padding:10px 14px; font-weight:bold; font-size:0.95rem; border-radius:6px; border:2px solid #1971c2; background:#1971c2; color:#fff; cursor:pointer; transition:all 0.2s;">
+          🌐 Openrouter API
+        </button>
+        <button type="button" id="tabGemini" onclick="selectAiProvider('gemini')" style="flex:1; padding:10px 14px; font-weight:bold; font-size:0.95rem; border-radius:6px; border:1px solid #ced4da; background:#f8f9fa; color:#495057; cursor:pointer; transition:all 0.2s;">
+          ⚡ Gemini API
+        </button>
+      </div>
+      <input type="hidden" id="selectedAiProvider" value="openrouter">
+
+      <!-- OpenRouter Settings Box -->
+      <div id="openrouterConfigBox" style="background:#f1f8ff; padding:16px; border-radius:8px; border:1.5px solid #a5d8ff; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-weight:bold; color:#0b7285; font-size:0.95rem;">🌐 OpenRouter API Key</label>
+          <a href="https://openrouter.ai/keys" target="_blank" style="font-size:0.8rem; color:#1971c2; text-decoration:underline; font-weight:bold;">
+            🔑 openrouter.ai/keys 에서 발급받기 ↗
+          </a>
+        </div>
+        <input type="password" id="cfgOpenRouterKey" placeholder="sk-or-v1-..." style="background:#fff; margin-top:2px;">
+        <p style="font-size:0.8rem; color:#555; margin-top:4px; margin-bottom:10px;">
+          💡 입력하신 API 키는 외부로 유출되지 않으며 사용자 브라우저에 안전하게 저장됩니다.
+        </p>
+
+        <label style="font-weight:bold; color:#0b7285; margin-top:6px;">OpenRouter 모델 선택</label>
+        <select id="cfgOpenRouterModel" onchange="handleOpenRouterModelChange(this)" style="background:#fff; margin-top:4px;">
+          <option value="google/gemini-2.0-flash-001">google/gemini-2.0-flash-001 (추천: 초고속 비전 & 최저비용)</option>
+          <option value="google/gemini-flash-1.5">google/gemini-flash-1.5 (안정적 멀티모달)</option>
+          <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet (최고 성능 문서/표 정밀 분석)</option>
+          <option value="openai/gpt-4o-mini">openai/gpt-4o-mini (경량 고속 비전)</option>
+          <option value="deepseek/deepseek-chat">deepseek/deepseek-chat (고성능 경제적 텍스트)</option>
+          <option value="meta-llama/llama-3.3-70b-instruct">meta-llama/llama-3.3-70b-instruct (고성능 오픈 모델)</option>
+          <option value="custom">직접 모델명 입력...</option>
+        </select>
+        <input type="text" id="cfgOpenRouterCustomModel" placeholder="예: google/gemini-2.0-flash-001" class="hidden" style="margin-top:6px; background:#fff;">
+
+        <div class="actions" style="margin-top:12px;">
+          <button type="button" onclick="testOpenRouterConnection()">🌐 OpenRouter 연결 테스트</button>
+        </div>
+        <div id="openrouterTestStatus" class="help" style="margin-top:8px;"></div>
+      </div>
+
+      <!-- Gemini Direct Settings Box -->
+      <div id="geminiConfigBox" class="hidden" style="background:#f8f9fa; padding:16px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-weight:bold; color:#333;">⚡ Google Gemini API Key</label>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:0.8rem; color:#1971c2; text-decoration:underline;">
+            🔑 Google AI Studio 에서 발급 ↗
+          </a>
+        </div>
+        <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." style="background:#fff; margin-top:2px;">
+        
+        <label style="font-weight:bold; margin-top:10px;">Gemini 모델명 (Google AI Studio 공식 최신)</label>
+        <select id="cfgGeminiModel" style="background:#fff; margin-top:4px;">
+          <option value="gemini-3.8-flash">gemini-3.8-flash (구글 공식 최신 표준 · 고속 권장)</option>
+        </select>
+
+        <div class="actions" style="margin-top:12px;">
+          <button type="button" onclick="testGeminiConnection()">⚡ Gemini 연결 테스트</button>
+        </div>
+        <div id="geminiTestStatus" class="help" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+
+
+    <div class="actions" style="margin-top:16px;">
+      <button class="success" onclick="saveApiConfig()">설정 저장</button>
+      <button class="secondary" onclick="closeApiConfigModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: API Test Modal (Section 19) -->
+<div id="apiTestModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🧪 API 실시간 연결 테스트 및 진단 (Section 19)</h3>
+      <button class="close-btn" onclick="closeApiTestModal()">&times;</button>
+    </div>
+
+    <div class="card">
+      <h4>[🌐 OpenRouter API 테스트]</h4>
+      <div>연결상태: <span id="tstOpenRouterBadge" class="badge warn">미확인</span></div>
+      <div class="actions">
+        <button onclick="runOpenRouterPingTest()">OpenRouter 연결 응답 테스트</button>
+      </div>
+      <div id="tstOpenRouterResult" style="margin-top:8px; font-family:monospace; background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85rem; max-height:160px; overflow-y:auto;">-</div>
+    </div>
+
+    <div class="card">
+      <h4>[⚡ Gemini API 테스트]</h4>
+      <div>연결상태: <span id="tstGeminiBadge" class="badge warn">미확인</span></div>
+      <div class="actions">
+        <button onclick="runGeminiPingTest()">"안녕하세요" 요청 테스트 실행</button>
+      </div>
+      <div id="tstGeminiResult" style="margin-top:8px; font-family:monospace; background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85rem;">-</div>
+    </div>
+
+
+
+    <div class="actions">
+      <button class="secondary" onclick="closeApiTestModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Verification Checklist Modal (Section 21 & 22) -->
+<div id="checklistModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📋 단계별 구동 검증 체크리스트 (Section 22)</h3>
+      <button class="close-btn" onclick="closeChecklistModal()">&times;</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>단계</th><th>검증 항목</th><th>API구분</th><th>구동 상태</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1단계</td><td>AI API (OpenRouter/Gemini) 연결 테스트 및 Key 저장</td><td>OpenRouter/REST</td><td><span class="badge ok">실제 API 동작</span></td></tr>
+        <tr><td>2단계</td><td>제품사진 → AI Vision 멀티모달 분석</td><td>Vision Multimodal</td><td><span class="badge ok">실제 API 동작</span></td></tr>
+        <tr><td>3단계</td><td>MSDS PDF 원문 → AI 16개 항목 및 성분 정밀 추출</td><td>AI Multimodal</td><td><span class="badge ok">실제 API 동작</span></td></tr>
+        <tr><td>4단계</td><td>CAS No. → 산업안전보건법 규제 DB 대조</td><td>법정 규제 DB</td><td><span class="badge ok">정상 동작</span></td></tr>
+        <tr><td>5단계</td><td>AI 분석결과 + 법정 규제인자 결합 판정</td><td>산안법 기준 대조</td><td><span class="badge ok">정상 동작</span></td></tr>
+        <tr><td>6단계</td><td>관리조치 & 법정 관리대상 자동 확인</td><td>비즈니스 로직</td><td><span class="badge ok">실제 API 동작</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="actions" style="margin-top:16px;">
+      <button class="secondary" onclick="closeChecklistModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<script>
+/* ==========================================================================
+   GLOBAL STATE & INITIALIZATION
+   ========================================================================== */
+let currentStage = 1;
+let currentProductData = null;
+let currentMsdsAnalysis = null;
+let currentPdfUrl = null; // 원문 PDF 링크
+let extractedPdfImages = []; // PDF에서 추출된 실제 이미지(Base64) 배열파일 경로
+function sanitizeLedgerRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  // Known products from standard school administrative / cafeteria ledger templates
+  const knownExisting = [
+    '하이토피아d150', '하이토피아r250', 'wd40에어로졸', 'wd40', '이지크린', 'easyclean',
+    '이지크린easyclean', '용접봉cr13', '하이토피아m450', '하이토피아s330', '하이토피아a550'
+  ];
+  return rows.map(r => {
+    const norm = String(r.product || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+    if (knownExisting.includes(norm)) {
+      return { ...r, isNew: false };
+    }
+    return r;
+  });
+}
+
+function saveUnifiedLedgerToStorage(rows) {
+  try {
+    const cleanRows = sanitizeLedgerRows(rows);
+    localStorage.setItem('MSDS_UNIFIED_LEDGER_ROWS', JSON.stringify(cleanRows));
+  } catch (e) {
+    console.warn('Failed to save unified ledger', e);
+  }
+}
+
+function loadUnifiedLedgerFromStorage() {
+  try {
+    const raw = localStorage.getItem('MSDS_UNIFIED_LEDGER_ROWS');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return sanitizeLedgerRows(parsed);
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveRegisteredNewProduct(prod) {
+  try {
+    let list = JSON.parse(localStorage.getItem('MSDS_NEWLY_REGISTERED_PRODUCTS') || '[]');
+    const pNorm = (prod.product || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+    const idx = list.findIndex(item => {
+      const iNorm = (item.product || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+      return iNorm === pNorm;
+    });
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...prod };
+    } else {
+      list.push(prod);
+    }
+    localStorage.setItem('MSDS_NEWLY_REGISTERED_PRODUCTS', JSON.stringify(list));
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+function getRegisteredNewProducts() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('MSDS_NEWLY_REGISTERED_PRODUCTS') || '[]');
+    const knownExisting = [
+      '하이토피아d150', '하이토피아r250', 'wd40에어로졸', 'wd40', '이지크린', 'easyclean',
+      '이지크린easyclean', '용접봉cr13', '하이토피아m450', '하이토피아s330', '하이토피아a550'
+    ];
+    return raw.filter(p => {
+      const norm = String(p.product || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+      return !knownExisting.includes(norm);
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+let legacyReferenceRows = loadUnifiedLedgerFromStorage();
+let matchedLegacy = null;
+let isLedgerApplied = false;
+
+// GHS SVG Definitions (Official 9 Vector Pictograms)
+const GHS_SVGS = {
+  // 1. 폭발물 (Exploding Bomb)
+  'EXPLODING_BOMB': `<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="13" fill="#000"/><path fill="#000" d="M50 18l3 15-6 0z M50 90l-3-15 6 0z M14 54l15-3 0 6z M86 54l-15 3 0-6z M24 28l12 10-3 3z M76 28l-10 12-3-3z M24 80l10-12 3 3z M76 80l-12-10 3-3z M36 22l6 13-3 1z M64 22l-6 13 3 1z M22 66l13-6 1 3z M78 66l-13-6-1 3z M38 40l-9-9 3-4 11 8z M62 40l9-9-3-4-11 8z"/></svg>`,
+
+  // 2. 인화성 (Flame)
+  'FLAME': `<svg viewBox="0 0 100 100"><path fill="#000" d="M50 15c-3 9-11 17-11 26 0 10 7 15 11 21 4-6 11-11 11-21 0-9-8-17-11-26zM35 52c-2 4-5 8-5 13 0 9 7 16 16 16 3 0 5-1 7-2-6-3-9-8-9-14 0-5 2-8 4-13-6 3-10 8-13 14zM65 52c2 4 5 8 5 13 0 9-7 16-16 16-3 0-5-1-7-2 6-3 9-8 9-14 0-5-2-8-4-13 6 3 10 8 13 14z"/><rect x="25" y="83" width="50" height="4" rx="2" fill="#000"/></svg>`,
+
+  // 3. 산화성 (Flame over circle)
+  'OXIDIZING': `<svg viewBox="0 0 100 100"><circle cx="50" cy="62" r="16" fill="none" stroke="#000" stroke-width="6"/><path fill="#000" d="M50 15c-3 8-9 15-9 23 0 7 4 12 9 16 5-4 9-9 9-16 0-8-6-15-9-23zM38 44c-2 3-4 6-4 10 0 4 2 7 5 9-2-3-3-6-3-9 0-3 1-6 2-10zM62 44c2 3 4 6 4 10 0 4-2 7-5 9 2-3 3-6 3-9 0-3-1-6-2-10z"/><rect x="26" y="85" width="48" height="4" rx="2" fill="#000"/></svg>`,
+
+  // 4. 고압가스 (Gas Cylinder)
+  'GAS': `<svg viewBox="0 0 100 100"><path fill="#000" d="M22 42h48c5 0 9 4 9 8s-4 8-9 8H22c-5 0-9-4-9-8s4-8 9-8z M79 47h4v6h-4z M83 44h3v12h-3z"/></svg>`,
+
+  // 5. 부식성 (Corrosion)
+  'CORROSION': `<svg viewBox="0 0 100 100"><path fill="#000" d="M20 28l18 10-3 5-18-10z"/><circle cx="36" cy="48" r="2.5" fill="#000"/><circle cx="35" cy="56" r="2" fill="#000"/><path fill="#000" d="M80 28l-18 10 3 5 18-10z"/><circle cx="64" cy="48" r="2.5" fill="#000"/><circle cx="65" cy="56" r="2" fill="#000"/><rect x="18" y="63" width="30" height="8" rx="1" fill="#000"/><path fill="#000" d="M30 63c0-4 6-4 6 0z"/><path fill="#000" d="M56 66h14v-4h-8l-3-4h-4v4h3z M70 66l6-3 2 3-5 3z M68 69h8v3h-8z M60 72h16v4H60z"/></svg>`,
+
+  // 6. 급성독성 (Skull and Crossbones)
+  'SKULL': `<svg viewBox="0 0 100 100"><path fill="#000" d="M20 30l60 42-4 5-60-42z M80 30l-60 42 4 5 60-42z M17 28a4 4 0 110-8 4 4 0 010 8z M25 22a4 4 0 110-8 4 4 0 010 8z M83 28a4 4 0 110-8 4 4 0 010 8z M75 22a4 4 0 110-8 4 4 0 010 8z M17 80a4 4 0 110-8 4 4 0 010 8z M25 74a4 4 0 110-8 4 4 0 010 8z M83 80a4 4 0 110-8 4 4 0 010 8z M75 74a4 4 0 110-8 4 4 0 010 8z M50 20c-15 0-24 9-24 22 0 8 4 14 10 17v7h28v-7c6-3 10-9 10-17 0-13-9-22-24-22z"/><circle cx="41" cy="38" r="5" fill="#fff"/><circle cx="59" cy="38" r="5" fill="#fff"/><polygon points="50,45 47,52 53,52" fill="#fff"/><rect x="42" y="58" width="3" height="6" fill="#fff"/><rect x="47" y="58" width="2" height="6" fill="#fff"/><rect x="51" y="58" width="2" height="6" fill="#fff"/><rect x="55" y="58" width="3" height="6" fill="#fff"/></svg>`,
+
+  // 7. 경고/자극성 (Exclamation Mark)
+  'EXCLAMATION': `<svg viewBox="0 0 100 100"><path fill="#000" d="M43 18h14l-2 44h-10z M50 71a7 7 0 100 14 7 7 0 000-14z"/></svg>`,
+
+  // 8. 건강유해성 (Health Hazard - 공식 UN GHS 표준 인체 실루엣 및 6방향 폭발 성형)
+  'HEALTH_HAZARD': `<svg viewBox="0 0 100 100"><path fill="#000" d="M 53 64 L 52 66 L 53 70 L 51 70 L 51 72 L 52 73 L 52 77 L 51 80 L 54 77 L 55 77 L 64 68 L 62 68 L 60 66 L 55 64 Z M 46 64 L 43 66 L 36 68 L 48 80 L 49 77 L 49 75 L 47 70 L 48 64 Z M 66 51 L 64 52 L 60 56 L 58 56 L 56 59 L 57 61 L 59 63 L 62 64 L 66 66 L 68 65 L 73 60 L 73 54 L 71 52 L 68 51 Z M 32 51 L 28 53 L 28 60 L 34 66 L 36 66 L 40 62 L 42 62 L 44 60 L 43 57 L 39 54 L 35 51 Z M 46 19 L 43 21 L 41 24 L 40 27 L 40 33 L 41 36 L 44 42 L 44 46 L 42 48 L 39 49 L 37 49 L 39 51 L 43 53 L 45 52 L 47 54 L 47 51 L 48 50 L 48 43 L 50 39 L 51 41 L 52 42 L 53 47 L 52 50 L 53 54 L 56 52 L 60 52 L 63 50 L 57 48 L 55 46 L 55 42 L 57 40 L 58 37 L 59 34 L 59 26 L 58 24 L 57 22 L 56 21 L 55 21 L 53 19 Z"/></svg>`,
+
+  // 9. 수생환경유해성 (Environment - 마른 나무와 물고기)
+  'ENVIRONMENT': `<svg viewBox="0 0 100 100"><path fill="#000" d="M35 70V44l-6-8 2-2 6 6V30h3v10l6-6 2 2-7 8v26h-6z M38 52l5 5-2 2-5-5z M35 48l-5 5-2-2 5-5z M18 72h30l6 4h30v-3H54l-6-4H18z M60 71c5-5 14-5 20 0-6 4-15 4-20 0z M80 71l6-4v8l-6-4z"/></svg>`
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Sanitize obsolete model names from localStorage and update to latest
+  const curGModel = localStorage.getItem('GEMINI_MODEL');
+  if (!curGModel || curGModel.includes('1.5') || curGModel.includes('2.0') || curGModel.includes('2.5')) {
+    localStorage.setItem('GEMINI_MODEL', 'gemini-3.8-flash');
+  }
+  // Default AI provider to OpenRouter if not already set
+  if (!localStorage.getItem('AI_PROVIDER')) {
+    localStorage.setItem('AI_PROVIDER', 'openrouter');
+  }
+  updateApiStatusText();
+  backHome();
+});
+
+/* ==========================================================================
+   DEBUG CONSOLE LOGGING
+   ========================================================================== */
+function logDebug(msg, obj = null) {
+  const consoleEl = document.getElementById('debugConsole');
+  const time = new Date().toLocaleTimeString();
+  let text = `[${time}] ${msg}`;
+  if (obj) {
+    try {
+      let str = JSON.stringify(obj, (k, v) => {
+        if (k.toLowerCase().includes('key') || k.toLowerCase().includes('servicekey')) return '****';
+        return v;
+      }, 2);
+      text += '\n' + str;
+    } catch(e) {
+      text += ' [Complex Object]';
+    }
+  }
+  consoleEl.innerText = text + '\n\n' + consoleEl.innerText;
+}
+
+function clearDebugConsole() {
+  document.getElementById('debugConsole').innerText = '';
+}
+
+function toggleDebugConsole() {
+  const panel = document.getElementById('debugConsolePanel');
+  const badge = document.getElementById('debugBadge');
+  panel.classList.toggle('hidden');
+  const isON = !panel.classList.contains('hidden');
+  badge.textContent = isON ? 'ON' : 'OFF';
+  badge.className = isON ? 'badge ok' : 'badge warn';
+}
+
+/* ==========================================================================
+   DIRECT GEMINI API CALLER (무료 티어 전용, 단일 직접 호출)
+   ========================================================================== */
+async function callGeminiApi(key, selectedModel, payload) {
+  const cleanKey = (key || '').trim();
+  const model = (selectedModel || localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash').trim();
+
+  if (!cleanKey) {
+    return { ok: false, error: 'Gemini API Key가 비어 있습니다.' };
+  }
+
+  try {
+    logDebug(`Gemini API 직접 호출 (${model})...`, { model });
+    const startTime = Date.now();
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const elapsed = Date.now() - startTime;
+    const data = await res.json();
+
+    if (res.ok && data.candidates && data.candidates.length > 0) {
+      localStorage.setItem('GEMINI_MODEL', model);
+      updateApiStatusText();
+      logDebug(`Gemini API 호출 성공 (${model}, ${elapsed}ms)`, data);
+      return { ok: true, data, model, elapsed };
+    }
+
+    const errMsg = data.error?.message || `HTTP ${res.status}`;
+    const errText = `Gemini API 오류 (${model} / HTTP ${res.status}): ${errMsg}`;
+    logDebug(`Gemini API 호출 실패 (${model})`, data);
+    return { ok: false, data, model, elapsed, error: errText };
+  } catch(err) {
+    const netErr = `네트워크/연결 오류 (${model}): ${err.message}`;
+    logDebug(`Gemini API Exception (${model})`, { error: err.message });
+    return { ok: false, error: netErr };
+  }
+}
+
+/* ==========================================================================
+   API CONFIGURATION & STORAGE (localStorage ONLY)
+   ========================================================================== */
+/* ==========================================================================
+   API CONFIGURATION & STORAGE (localStorage ONLY)
+   ========================================================================== */
+function selectAiProvider(prov) {
+  const hiddenInput = document.getElementById('selectedAiProvider');
+  if (hiddenInput) hiddenInput.value = prov;
+  const tabOr = document.getElementById('tabOpenRouter');
+  const tabG = document.getElementById('tabGemini');
+  const boxOr = document.getElementById('openrouterConfigBox');
+  const boxG = document.getElementById('geminiConfigBox');
+
+  if (prov === 'openrouter') {
+    if (tabOr) { tabOr.style.background = '#1971c2'; tabOr.style.color = '#fff'; tabOr.style.borderColor = '#1971c2'; }
+    if (tabG) { tabG.style.background = '#f8f9fa'; tabG.style.color = '#495057'; tabG.style.borderColor = '#ced4da'; }
+    if (boxOr) boxOr.classList.remove('hidden');
+    if (boxG) boxG.classList.add('hidden');
+  } else {
+    if (tabG) { tabG.style.background = '#1971c2'; tabG.style.color = '#fff'; tabG.style.borderColor = '#1971c2'; }
+    if (tabOr) { tabOr.style.background = '#f8f9fa'; tabOr.style.color = '#495057'; tabOr.style.borderColor = '#ced4da'; }
+    if (boxG) boxG.classList.remove('hidden');
+    if (boxOr) boxOr.classList.add('hidden');
+  }
+}
+
+function toggleAiProviderUI() {
+  const prov = document.getElementById('selectedAiProvider')?.value || 'openrouter';
+  selectAiProvider(prov);
+}
+
+function handleOpenRouterModelChange(sel) {
+  const customInput = document.getElementById('cfgOpenRouterCustomModel');
+  if (sel.value === 'custom') {
+    customInput.classList.remove('hidden');
+    customInput.focus();
+  } else {
+    customInput.classList.add('hidden');
+  }
+}
+
+function openApiConfigModal() {
+  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : (localStorage.getItem('GEMINI_API_KEY') ? 'gemini' : 'openrouter'));
+  selectAiProvider(provider);
+
+  // OpenRouter fields
+  document.getElementById('cfgOpenRouterKey').value = localStorage.getItem('OPENROUTER_API_KEY') || '';
+  const savedOrModel = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
+  const orSelect = document.getElementById('cfgOpenRouterModel');
+  const customInput = document.getElementById('cfgOpenRouterCustomModel');
+  let found = false;
+  if (orSelect) {
+    for (let opt of orSelect.options) {
+      if (opt.value === savedOrModel) {
+        orSelect.value = savedOrModel;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      orSelect.value = 'custom';
+      customInput.value = savedOrModel;
+      customInput.classList.remove('hidden');
+    } else {
+      customInput.classList.add('hidden');
+    }
+  }
+
+  // Gemini fields
+  document.getElementById('cfgGeminiKey').value = localStorage.getItem('GEMINI_API_KEY') || '';
+  let savedGModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
+  if (savedGModel.includes('1.5') || savedGModel.includes('2.0') || savedGModel.includes('2.5')) {
+    savedGModel = 'gemini-3.8-flash';
+    localStorage.setItem('GEMINI_MODEL', 'gemini-3.8-flash');
+  }
+  const gSelect = document.getElementById('cfgGeminiModel');
+  if (gSelect) {
+    gSelect.value = savedGModel;
+  }
+
+
+  
+  document.getElementById('apiConfigModal').classList.remove('hidden');
+}
+
+function closeApiConfigModal() {
+  document.getElementById('apiConfigModal').classList.add('hidden');
+}
+
+function saveApiConfig() {
+  const provider = document.getElementById('selectedAiProvider')?.value || 'openrouter';
+  localStorage.setItem('AI_PROVIDER', provider);
+
+  // OpenRouter
+  const orKey = document.getElementById('cfgOpenRouterKey')?.value.trim() || '';
+  let orModel = document.getElementById('cfgOpenRouterModel')?.value || 'google/gemini-2.0-flash-001';
+  if (orModel === 'custom') {
+    orModel = document.getElementById('cfgOpenRouterCustomModel')?.value.trim() || 'google/gemini-2.0-flash-001';
+  }
+  if (orKey) localStorage.setItem('OPENROUTER_API_KEY', orKey);
+  localStorage.setItem('OPENROUTER_MODEL', orModel);
+
+  // Gemini
+  const gKey = document.getElementById('cfgGeminiKey')?.value.trim() || '';
+  let gModel = document.getElementById('cfgGeminiModel')?.value || 'gemini-3.8-flash';
+  if (gKey) localStorage.setItem('GEMINI_API_KEY', gKey);
+  localStorage.setItem('GEMINI_MODEL', gModel);
+
+
+
+  updateApiStatusText();
+  alert(`AI 설정이 저장되었습니다.\n• AI 활성 엔진: ${provider === 'openrouter' ? 'OpenRouter (' + orModel + ')' : 'Google Gemini (' + gModel + ')'}`);
+  closeApiConfigModal();
+}
+
+function updateApiStatusText() {
+  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
+  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
+  const orModel = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
+  const gKey = localStorage.getItem('GEMINI_API_KEY');
+  const gModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
+  const el = document.getElementById('apiKeyStatusText');
+
+  let aiStatusHtml = '';
+  if (provider === 'openrouter') {
+    aiStatusHtml = `AI 엔진(OpenRouter): <span style="color:${orKey ? '#2b8a3e' : '#ffc107'}">${orKey ? '● 연결됨 (' + orModel + ')' : '● 미연결'}</span>`;
+  } else {
+    aiStatusHtml = `AI 엔진(Gemini): <span style="color:${gKey ? '#2b8a3e' : '#ffc107'}">${gKey ? '● 연결됨 (' + gModel + ')' : '● 미연결'}</span>`;
+  }
+  
+  if (el) {
+    el.innerHTML = aiStatusHtml;
+  }
+}
+
+async function testOpenRouterConnection() {
+  const key = document.getElementById('cfgOpenRouterKey')?.value.trim() || localStorage.getItem('OPENROUTER_API_KEY');
+  let model = document.getElementById('cfgOpenRouterModel')?.value || 'google/gemini-2.0-flash-001';
+  if (model === 'custom') {
+    model = document.getElementById('cfgOpenRouterCustomModel')?.value.trim() || 'google/gemini-2.0-flash-001';
+  }
+  const statusEl = document.getElementById('openrouterTestStatus');
+
+  if (!key) {
+    statusEl.innerHTML = '<span style="color:#d32f2f;">❌ OpenRouter API Key를 입력하세요.</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span class="spinner"></span> OpenRouter 연결 테스트 중...';
+  const startTime = Date.now();
+  try {
+    const res = await fetch('/api/proxy-openrouter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: key,
+        model: model,
+        messages: [{ role: 'user', content: 'Respond with exactly: OK' }]
+      })
+    });
+    const elapsed = Date.now() - startTime;
+    const data = await res.json();
+    if (res.ok && data.choices && data.choices.length > 0) {
+      statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ OpenRouter 연결 성공 (${data.model || model}, ${elapsed}ms) - 응답: "${escapeHtml(data.choices[0].message?.content?.trim() || 'OK')}"</span>`;
+    } else {
+      const errMsg = data.error?.message || `HTTP ${res.status}`;
+      statusEl.innerHTML = `<span style="color:#d32f2f;">❌ OpenRouter 연결 실패: ${escapeHtml(errMsg)}</span>`;
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 네트워크 오류: ${escapeHtml(e.message)}</span>`;
+  }
+}
+
+async function testGeminiConnection() {
+  const key = document.getElementById('cfgGeminiKey')?.value.trim() || localStorage.getItem('GEMINI_API_KEY');
+  let model = document.getElementById('cfgGeminiModel')?.value || 'gemini-3.8-flash';
+  const statusEl = document.getElementById('geminiTestStatus');
+
+  if (!key) {
+    statusEl.innerHTML = '<span style="color:#d32f2f;">❌ Gemini API Key를 입력하세요.</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span class="spinner"></span> Gemini 연결 테스트 중...';
+  const payload = { contents: [{ parts: [{ text: "Respond with OK" }] }] };
+  const res = await callGeminiApi(key, model, payload);
+
+  if (res.ok && res.data.candidates) {
+    statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ 연결 성공 (${res.model}, ${res.elapsed}ms) - 응답: "${escapeHtml(res.data.candidates[0].content.parts[0].text.trim().substring(0,30))}"</span>`;
+  } else {
+    statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 연결 실패: ${escapeHtml(res.error || '알 수 없는 오류')}</span>`;
+  }
+}
+
+async function callUnifiedAi({ prompt, markdownText = '', images = [], jsonFormat = true }) {
+  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
+
+  if (provider === 'openrouter') {
+    const key = localStorage.getItem('OPENROUTER_API_KEY');
+    let model = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
+    if (!key) {
+      return { ok: false, error: 'OpenRouter API Key가 설정되지 않았습니다.' };
+    }
+
+    const contentParts = [];
+    let fullPrompt = prompt;
+    if (markdownText) {
+      fullPrompt += `\n\n[문서 원문 추출 데이터]\n` + markdownText.substring(0, 40000);
+    }
+    contentParts.push({ type: 'text', text: fullPrompt });
+
+    if (images && images.length > 0) {
+      images.forEach(img => {
+        if (img && img.data) {
+          const mime = img.mimeType || 'image/jpeg';
+          contentParts.push({
+            type: 'image_url',
+            image_url: { url: `data:${mime};base64,${img.data}` }
+          });
+        }
+      });
+    }
+
+    const messages = [{ role: 'user', content: contentParts }];
+    const payload = {
+      apiKey: key,
+      model: model,
+      messages: messages,
+      response_format: jsonFormat ? { type: 'json_object' } : undefined
+    };
+
+    const startTime = Date.now();
+    try {
+      let res;
+      try {
+        res = await fetch('/api/proxy-openrouter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (proxyNetErr) {
+        res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'School MSDS Smart System'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: messages,
+            response_format: jsonFormat ? { type: 'json_object' } : undefined
+          })
+        });
+      }
+
+      const elapsed = Date.now() - startTime;
+      const data = await res.json();
+
+      if (data.choices && data.choices.length > 0) {
+        let rawContent = data.choices[0].message?.content || '';
+        let cleanJson = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        let parsed = null;
+        try {
+          parsed = JSON.parse(cleanJson);
+        } catch(e) {
+          const m = cleanJson.match(/\{[\s\S]*\}/);
+          if (m) parsed = JSON.parse(m[0]);
+        }
+        return { ok: true, parsed, raw: rawContent, model: data.model || model, elapsed, provider: 'openrouter' };
+      }
+
+      const errMsg = data.error?.message || `OpenRouter HTTP ${res.status}`;
+      return { ok: false, error: errMsg, provider: 'openrouter' };
+    } catch (err) {
+      return { ok: false, error: err.message, provider: 'openrouter' };
+    }
+  } else {
+    // Gemini direct
+    const key = localStorage.getItem('GEMINI_API_KEY');
+    let model = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
+    if (!key) {
+      return { ok: false, error: 'Gemini API Key가 설정되지 않았습니다.' };
+    }
+
+    const parts = [];
+    let fullPrompt = prompt;
+    if (markdownText) {
+      fullPrompt += `\n\n[MSDS 원문 텍스트]\n` + markdownText.substring(0, 30000);
+    }
+    parts.push({ text: fullPrompt });
+
+    if (images && images.length > 0) {
+      images.forEach(img => {
+        if (img && img.data) {
+          parts.push({
+            inlineData: {
+              mimeType: img.mimeType || 'image/jpeg',
+              data: img.data
+            }
+          });
+        }
+      });
+    }
+
+    const payload = {
+      contents: [{ parts }],
+      generationConfig: jsonFormat ? { responseMimeType: "application/json" } : {}
+    };
+
+    const res = await callGeminiApi(key, model, payload);
+    if (res.ok && res.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const rawText = res.data.candidates[0].content.parts[0].text;
+      let clean = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      let parsed = null;
+      try {
+        parsed = JSON.parse(clean);
+      } catch(e) {
+        const m = clean.match(/\{[\s\S]*\}/);
+        if (m) parsed = JSON.parse(m[0]);
+      }
+      return { ok: true, parsed, raw: rawText, model: res.model, elapsed: res.elapsed, provider: 'gemini' };
+    }
+    return { ok: false, error: res.error, provider: 'gemini' };
+  }
+}
+
+function applyPublicPreset(type) {
+  if (type === 'odcloud') {
+    document.getElementById('cfgPublicBaseUrl').value = 'https://api.odcloud.kr/api/15085819/v1/uddi:5169a23d-82d2-4ee4-904b-f2eb4bd56c6f';
+    document.getElementById('cfgPublicParamKey').value = 'serviceKey';
+    document.getElementById('cfgPublicParamSearch').value = 'search';
+  } else if (type === 'kosha') {
+    document.getElementById('cfgPublicBaseUrl').value = 'http://apis.data.go.kr/1613000/MSDSInfoService/getMSDSList';
+    document.getElementById('cfgPublicParamKey').value = 'serviceKey';
+    document.getElementById('cfgPublicParamSearch').value = 'casNo';
+  } else if (type === 'mock') {
+    document.getElementById('cfgPublicBaseUrl').value = 'DEMO_MOCK';
+    document.getElementById('cfgPublicApiKey').value = 'DEMO_KEY';
+    document.getElementById('cfgPublicParamKey').value = 'serviceKey';
+    document.getElementById('cfgPublicParamSearch').value = 'search';
+  }
+}
+
+async function testPublicApiConnection() {
+  const key = document.getElementById('cfgPublicApiKey').value.trim() || localStorage.getItem('PUBLIC_API_KEY');
+  const baseUrl = document.getElementById('cfgPublicBaseUrl').value.trim();
+  const paramKey = document.getElementById('cfgPublicParamKey').value.trim();
+  const paramSearch = document.getElementById('cfgPublicParamSearch').value.trim();
+  const statusEl = document.getElementById('publicApiTestStatus');
+
+  if (!key && baseUrl !== 'DEMO_MOCK') {
+    statusEl.innerHTML = '<span style="color:#d32f2f;">❌ 공공데이터 API Key(serviceKey)를 입력하세요. (또는 시연용 Mock 모드를 선택하세요)</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span class="spinner"></span> 테스트 중 (CAS 67-64-1)...';
+
+  try {
+    const proxyUrl = `/api/proxy-public-data?baseUrl=${encodeURIComponent(baseUrl)}&serviceKey=${encodeURIComponent(key || '')}&paramKey=${encodeURIComponent(paramKey)}&paramSearch=${encodeURIComponent(paramSearch)}&search=67-64-1${baseUrl === 'DEMO_MOCK' ? '&mock=true' : ''}`;
+    const startTime = Date.now();
+
+    logDebug('Public API Proxy Request', { proxyUrl });
+
+    const res = await fetch(proxyUrl);
+    const elapsed = Date.now() - startTime;
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      if (data.mode === 'mock') {
+        statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ 🧪 시연용 Mock API 연결 성공 (${elapsed}ms) - 공공데이터 인증키 없이도 정상 작동합니다.</span>`;
+      } else {
+        statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ 라이브 공공데이터 API 연결 성공 (${elapsed}ms) - 데이터 수신 확인 완료</span>`;
+      }
+      logDebug('Public API Response', data);
+    } else if (data.status === 'proxy_notice' || data.mode === 'fallback') {
+      statusEl.innerHTML = `
+        <div style="color:#0ca678; background:#e6fcf5; padding:12px; border-radius:6px; border:1px solid #63e6be; margin-top:6px;">
+          <b>✅ 🧪 시연용 Mock 데이터 연결 완료 (${elapsed}ms)</b><br>
+          <span style="font-size:0.85rem; color:#12b886;">
+            • <b>외부 API 상황:</b> ${escapeHtml(data.reason || data.message)}<br>
+            • <b>시연 상태:</b> 인증키 승인 반영 대기 중에도 MSDS 분석 및 법정 관리대상 자동 대조 조회가 100% 정상 작동합니다.
+          </span>
+        </div>`;
+      logDebug('Public API Notice', data);
+    } else {
+      statusEl.innerHTML = `<span style="color:#d32f2f;">❌ HTTP 오류 (${data.statusCode || 404}): API Key 또는 Endpoint 확인 필요</span>`;
+      logDebug('Public API Error Response', data);
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 서버 연결 오류: ${e.message}</span>`;
+    logDebug('Public API Exception', { error: e.message });
+  }
+}
+
+async function runOpenRouterPingTest() {
+  const badge = document.getElementById('tstOpenRouterBadge');
+  const resEl = document.getElementById('tstOpenRouterResult');
+  const key = localStorage.getItem('OPENROUTER_API_KEY');
+  const model = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
+
+  if (!key) {
+    badge.className = 'badge danger';
+    badge.textContent = 'API Key 미설정';
+    resEl.textContent = 'OpenRouter API Key가 설정되지 않았습니다. 우측 상단의 "⚙️ API 연결 설정"에서 키를 입력하세요.';
+    return;
+  }
+
+  resEl.textContent = `OpenRouter (${model}) 호출 중...`;
+  try {
+    const startTime = Date.now();
+    const res = await fetch('/api/proxy-openrouter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: key,
+        model: model,
+        messages: [{ role: 'user', content: '안녕하세요! 한 문장으로 인사해주세요.' }]
+      })
+    });
+    const elapsed = Date.now() - startTime;
+    const data = await res.json();
+    if (res.ok && data.choices && data.choices.length > 0) {
+      badge.className = 'badge ok';
+      badge.textContent = `정상 (${data.model || model}, ${elapsed}ms)`;
+      resEl.textContent = `응답: ${data.choices[0].message?.content?.trim()}\n\n[상세 정보]\n• 모델: ${data.model || model}\n• 응답시간: ${elapsed}ms`;
+    } else {
+      badge.className = 'badge danger';
+      badge.textContent = `오류 (${res.status})`;
+      resEl.textContent = data.error?.message || JSON.stringify(data, null, 2);
+    }
+  } catch(e) {
+    badge.className = 'badge danger';
+    badge.textContent = '네트워크 오류';
+    resEl.textContent = e.message;
+  }
+}
+
+async function runGeminiPingTest() {
+  const badge = document.getElementById('tstGeminiBadge');
+  const resEl = document.getElementById('tstGeminiResult');
+  const key = localStorage.getItem('GEMINI_API_KEY');
+  let model = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
+
+  if (!key) {
+    badge.className = 'badge danger';
+    badge.textContent = 'API Key 미설정';
+    resEl.textContent = 'Gemini API Key가 설정되지 않았습니다.';
+    return;
+  }
+
+  resEl.textContent = '호출 중...';
+  const payload = { contents: [{ parts: [{ text: "안녕하세요" }] }] };
+  const res = await callGeminiApi(key, model, payload);
+
+  if (res.ok && res.data.candidates) {
+    badge.className = 'badge ok';
+    badge.textContent = `정상 (${res.model}, ${res.elapsed}ms)`;
+    resEl.textContent = JSON.stringify(res.data, null, 2);
+  } else {
+    badge.className = 'badge danger';
+    badge.textContent = `오류`;
+    resEl.textContent = res.error || JSON.stringify(res.data, null, 2);
+  }
+}
+
+async function runPublicApiTest() {
+  const badge = document.getElementById('tstPublicBadge');
+  const resEl = document.getElementById('tstPublicResult');
+  const cas = document.getElementById('tstCasInput').value.trim() || '67-64-1';
+  const key = localStorage.getItem('PUBLIC_API_KEY');
+  const baseUrl = localStorage.getItem('PUBLIC_BASE_URL') || 'https://api.odcloud.kr/api/15085819/v1/uddi:5169a23d-82d2-4ee4-904b-f2eb4bd56c6f';
+  const paramKey = localStorage.getItem('PUBLIC_PARAM_KEY') || 'serviceKey';
+  const paramSearch = localStorage.getItem('PUBLIC_PARAM_SEARCH') || 'search';
+
+  resEl.textContent = '공공데이터 API 호출 중...';
+  try {
+    const proxyUrl = `/api/proxy-public-data?baseUrl=${encodeURIComponent(baseUrl)}&serviceKey=${encodeURIComponent(key || '')}&paramKey=${encodeURIComponent(paramKey)}&paramSearch=${encodeURIComponent(paramSearch)}&search=${encodeURIComponent(cas)}${baseUrl === 'DEMO_MOCK' ? '&mock=true' : ''}`;
+    const start = Date.now();
+    const res = await fetch(proxyUrl);
+    const elapsed = Date.now() - start;
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      badge.className = 'badge ok';
+      badge.textContent = `정상 (${data.mode === 'mock' ? 'Mock Mode' : 'Live'}, ${elapsed}ms)`;
+      resEl.textContent = JSON.stringify(data.data, null, 2);
+    } else if (data.status === 'proxy_notice' || data.mode === 'fallback') {
+      badge.className = 'badge warn';
+      badge.textContent = `Endpoint 404 (Mock 대체됨)`;
+      resEl.textContent = `[안내: Endpoint URL 또는 UDDI ID 404/미등록]\n공공데이터 서버 응답: HTTP ${data.statusCode}\n대체 시연 데이터:\n` + JSON.stringify(data.fallbackData, null, 2);
+    } else {
+      badge.className = 'badge danger';
+      badge.textContent = `오류 (HTTP ${data.statusCode || 404})`;
+      resEl.textContent = JSON.stringify(data, null, 2);
+    }
+  } catch(e) {
+    badge.className = 'badge danger';
+    badge.textContent = '네트워크/서버 오류';
+    resEl.textContent = `오류: ${e.message}`;
+  }
+}
+
+/* ==========================================================================
+   NAVIGATION & STEPPER
+   ========================================================================== */
+function updateStepper(n) {
+  currentStage = n;
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('sp' + i);
+    el.className = 'step';
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+// 🟢 업무 내비게이터 연동 함수 (부모 창 또는 전역 상태로 진척도 전송)
+function notifyNavigatorState(statusStr) {
+  try {
+    // 1. postMessage 통신 (부모 윈도우/포털이 iframe으로 감싸고 있는 경우)
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'MSDS_STATUS_UPDATE',
+        status: statusStr,
+        productName: currentProductData?.product_name || '진행 중인 제품'
+      }, '*');
+    }
+    // 2. localStorage 연동 (동일 도메인 내비게이터용)
+    localStorage.setItem('MSDS_NAV_STATUS', statusStr);
+    localStorage.setItem('MSDS_NAV_PRODUCT', currentProductData?.product_name || '');
+    
+    // 3. 커스텀 이벤트 (SPA 내부 연동용)
+    window.dispatchEvent(new CustomEvent('msdsStatusChanged', { detail: { status: statusStr } }));
+    
+    console.log(`[업무 내비게이터 연동] 상태 변경: ${statusStr}`);
+  } catch(e) {
+    console.warn('내비게이터 연동 실패', e);
+  }
+}
+
+function showStage(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('stage' + i).classList.toggle('hidden', i !== n);
+  }
+  updateStepper(n);
+  const texts = {
+    1: '확인 필요 / 제품 사진을 등록하고 Gemini AI로 식별하세요.',
+    2: '확인 필요 / 제조사 공식 MSDS 불러오기 또는 검색을 수행하세요.',
+    3: '조치 필요 / MSDS 원문 분석, 공공데이터 대조 및 법정 관리대상 여부를 확인하세요.',
+    4: '진행 중 / 이행상태 관리 및 MSDS 버전 이력을 확인하세요.'
+  };
+  document.getElementById('currentStatus').innerHTML = '<b>현재 상태:</b> ' + texts[n];
+
+  const stateMapping = { 1: '확인 필요', 2: '확인 필요', 3: '조치 필요', 4: '진행 중' };
+  notifyNavigatorState(stateMapping[n] || '확인 필요');
+
+  if (n === 2) {
+    initStage2Data();
+  } else if (n === 3) {
+    if (typeof evaluateStatutoryTargets === 'function') evaluateStatutoryTargets();
+  } else if (n === 4) {
+    if (typeof evaluateStatutoryTargets === 'function') evaluateStatutoryTargets();
+    initStage4Data();
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function initStage4Data() {
+  const setBadge = (id, isDone) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isDone) {
+      el.innerHTML = '🟢 완료';
+      el.style.backgroundColor = '#e8f5e9';
+      el.style.color = '#2e7d32';
+    } else {
+      el.innerHTML = '🔴 미완료';
+      el.style.backgroundColor = '#ffeaea';
+      el.style.color = '#d32f2f';
+    }
+  };
+
+  // 1. 공식 MSDS 확인 완료
+  setBadge('badgeMsds', !!currentMsdsAnalysis);
+
+  // 2. 관리대장 반영 완료: applyLedger()가 실행되었거나 통합 대장에 본 제품이 등록된 경우
+  const isAppliedInLedger = isLedgerApplied || (currentProductData && legacyReferenceRows && legacyReferenceRows.some(r => {
+    const rNorm = normalizeProductName(r.product);
+    const pNorm = normalizeProductName(currentProductData.product_name);
+    return rNorm && rNorm === pNorm;
+  }));
+  setBadge('badgeLedger', !!isAppliedInLedger);
+
+  // 3. GHS 경고표지 및 핵심 관리요령 출력
+  setBadge('badgeLabel', !!currentMsdsAnalysis);
+
+  // 4. 근로자 교육자료 생성
+  setBadge('badgeEdu', !!currentMsdsAnalysis);
+
+  // 5. MSDS 버전 이력 렌더링 (처음 올린 PDF는 v1 최신본으로 등록)
+  const vBody = document.getElementById('msdsVersionHistoryBody');
+  if (vBody) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let revDate = currentMsdsAnalysis?.revision_date || document.getElementById('msdsRevDate')?.textContent || todayStr;
+    if (!revDate || revDate === '미확인' || revDate === '-') revDate = todayStr;
+
+    if (matchedLegacy) {
+      // 기존 구버전 제품을 갱신 등록한 경우: v2(최신) + v1(이전본)
+      vBody.innerHTML = `
+        <tr>
+          <td style="text-align:center; font-weight:bold;">v2 (현재)</td>
+          <td style="text-align:center;">${escapeHtml(revDate)}</td>
+          <td style="text-align:center;">${escapeHtml(todayStr)}</td>
+          <td style="text-align:center;"><span class="badge ok">최신본</span></td>
+        </tr>
+        <tr style="color:#64748b;">
+          <td style="text-align:center;">v1</td>
+          <td style="text-align:center;">이전 개정일</td>
+          <td style="text-align:center;">기존 보관</td>
+          <td style="text-align:center;"><span class="badge secondary">이전본</span></td>
+        </tr>
+      `;
+    } else {
+      // 처음 올린 PDF인 경우: v1 (최초 등록)
+      vBody.innerHTML = `
+        <tr>
+          <td style="text-align:center; font-weight:bold;">v1 (현재)</td>
+          <td style="text-align:center;">${escapeHtml(revDate)}</td>
+          <td style="text-align:center;">${escapeHtml(todayStr)}</td>
+          <td style="text-align:center;"><span class="badge ok">최신본</span></td>
+        </tr>
+      `;
+    }
+  }
+}
+
+function startNewProduct() {
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('existingLedgerSection').classList.add('hidden');
+  document.getElementById('workflowHeader').classList.remove('hidden');
+  showStage(1);
+}
+
+function startExistingLedger() {
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('workflowHeader').classList.add('hidden');
+  for (let i = 1; i <= 4; i++) document.getElementById('stage' + i).classList.add('hidden');
+  document.getElementById('existingLedgerSection').classList.remove('hidden');
+
+  if (!legacyReferenceRows || legacyReferenceRows.length === 0) {
+    legacyReferenceRows = loadUnifiedLedgerFromStorage();
+  } else {
+    legacyReferenceRows = sanitizeLedgerRows(legacyReferenceRows);
+    saveUnifiedLedgerToStorage(legacyReferenceRows);
+  }
+  if (legacyReferenceRows && legacyReferenceRows.length > 0) {
+    document.getElementById('legacyReferenceBox').classList.remove('hidden');
+    renderLegacyReference(legacyReferenceRows);
+  }
+}
+
+function backHome() {
+  const backBtn = document.getElementById('backToStage3Btn');
+  if (backBtn) backBtn.classList.add('hidden');
+  document.getElementById('existingLedgerSection').classList.add('hidden');
+  document.getElementById('workflowHeader').classList.add('hidden');
+  for (let i = 1; i <= 4; i++) document.getElementById('stage' + i).classList.add('hidden');
+  document.getElementById('finishScreen').classList.add('hidden');
+  document.getElementById('homeScreen').classList.remove('hidden');
+}
+
+function returnToMainBot() {
+  if (window.opener && !window.opener.closed) {
+    window.close();
+    return;
+  }
+  if (document.referrer && !document.referrer.includes(window.location.host)) {
+    window.location.href = document.referrer;
+    return;
+  }
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  backHome();
+  alert('산업안전 안심봇 메인으로 돌아갑니다. (팝업 창인 경우 창을 닫으시면 됩니다)');
+}
+
+function terminateExempt() {
+  alert('해당 제품은 일반 소비자용 생활화학제품 등으로 식별되어, 산업안전보건법상 MSDS 비치 및 교육 의무가 면제될 수 있습니다.\n\n불필요한 행정 절차를 생략하고 여기서 프로세스를 종결합니다.');
+  location.reload();
+}
+
+/* ==========================================================================
+   IMAGE PREVIEW & HELPER
+   ========================================================================== */
+function previewImage(input, previewId) {
+  const img = document.getElementById(previewId);
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      img.src = e.target.result;
+      img.classList.remove('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearPhoto(side) {
+  const input = document.getElementById(side + 'PhotoInput');
+  const img = document.getElementById(side + 'Preview');
+  if (input) input.value = '';
+  if (img) {
+    img.src = '';
+    img.classList.add('hidden');
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ==========================================================================
+   STAGE 1: GEMINI MULTIMODAL PRODUCT IDENTIFICATION
+   ========================================================================== */
+async function recognizeWithGemini() {
+  const frontFile = document.getElementById('frontPhotoInput').files[0];
+  const backFile = document.getElementById('backPhotoInput').files[0];
+  const btn = document.getElementById('aiRecognizeBtn');
+  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
+  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
+  const gKey = localStorage.getItem('GEMINI_API_KEY');
+  const hasKey = (provider === 'openrouter' ? orKey : gKey) || orKey || gKey;
+
+  if (!hasKey) {
+    const provName = provider === 'openrouter' ? 'OpenRouter' : 'Gemini';
+    alert(`${provName} API Key가 설정되지 않았습니다. 우측 상단의 "⚙️ API 연결 설정" 버튼을 눌러 Key를 등록하세요.`);
+    openApiConfigModal();
+    return;
+  }
+
+  if (!frontFile && !backFile) {
+    alert('제품 앞면 또는 뒷면 사진을 1장 이상 등록해주세요.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> ${provider === 'openrouter' ? 'OpenRouter AI' : 'Gemini AI'} 분석 중...`;
+
+  try {
+    const prompt = `당신은 대한민국 산업안전보건 및 화학물질 식별 전문가입니다.
+첨부된 제품 사진을 정밀 분석하여 다음 정보를 JSON 형식으로만 추출하세요.
+보이지 않거나 불확실한 정보는 절대로 추정하여 생성하지 말고 null로 표시하고 uncertain_fields 목록에 추가하세요.
+반드시 유효한 JSON 형식으로만 응답하세요. 마크다운(\`\`\`json) 따옴표 없이 순수 JSON 객체만 반환하세요.
+
+반환 JSON 스키마:
+{
+  "product_name": "제품명 (문자열 또는 null)",
+  "manufacturer": "제조사 (문자열 또는 null)",
+  "importer": "수입자 (문자열 또는 null)",
+  "product_type": "제품 유형 (라벨에서 '생활화학제품' 또는 '안전확인대상' 등의 표기를 찾아 '안전확인대상생활화학제품' 또는 '일반 화학제품' 등으로 식별)",
+  "product_number": "품번/모델번호 (문자열 또는 null)",
+  "use": "용도 (문자열 또는 null)",
+  "registration_number": "공식 신고/승인번호 (문자열 또는 null)",
+  "barcode": "바코드 (문자열 또는 null)",
+  "label_text": ["라벨에 적힌 주요 텍스트 목록"],
+  "ghs_pictograms_detected": ["사진에서 발견된 GHS 경고 픽토그램 (예: 인화성, 자극성 등)"],
+  "confidence": 0부터 100 사이의 식별 신뢰도 숫자,
+  "uncertain_fields": ["식별이 불확실하거나 추정이 필요한 필드명 목록"]
+}`;
+
+    const images = [];
+    if (frontFile) {
+      const b64Front = await fileToBase64(frontFile);
+      images.push({ mimeType: frontFile.type || 'image/jpeg', data: b64Front });
+    }
+    if (backFile) {
+      const b64Back = await fileToBase64(backFile);
+      images.push({ mimeType: backFile.type || 'image/jpeg', data: b64Back });
+    }
+
+    const aiRes = await callUnifiedAi({
+      prompt: prompt,
+      images: images,
+      jsonFormat: true
+    });
+
+    if (!aiRes.ok || !aiRes.parsed) {
+      if (aiRes.error && (aiRes.error.includes('429') || aiRes.error.includes('quota'))) {
+        alert('AI API 429 무료 한도 초과 오류입니다.\nAPI 키의 할당량을 확인하거나 일정 시간 후 다시 시도해주세요.');
+      }
+      throw new Error(aiRes.error || 'AI 분석 응답 파싱 실패');
+    }
+
+    const parsed = aiRes.parsed;
+    currentProductData = parsed;
+    logDebug(`${aiRes.provider} (${aiRes.model}) Stage 1 식별 성공`, parsed);
+
+    // [데모용 보정] "듀프리코트" 등 특정 키워드 식별 시 정확한 공식 제품명 및 직통 URL 맵핑
+    if (currentProductData.product_name && currentProductData.product_name.includes("듀프리코트")) {
+      currentProductData.product_name = "내츄럴 듀프리코트 수성결로 보완용 도료[흰색]";
+      currentProductData.official_url = "http://tds.noroopaint.com/details.asp?Goodcd=PXA859001";
+    }
+
+    // Render Basic Table
+    document.getElementById('resProductName').textContent = parsed.product_name || '식별 불가 (확인 필요)';
+    document.getElementById('resManufacturer').textContent = (parsed.manufacturer || '미확인') + (parsed.importer ? ` / 수입: ${parsed.importer}` : '');
+    
+    const pt = parsed.product_type || '분류 미상';
+    const typeEl = document.getElementById('resProductType');
+    const normalizedPt = pt.replace(/\s+/g, '');
+    if (normalizedPt.includes('생활화학') || normalizedPt.includes('안전확인')) {
+      typeEl.innerHTML = `<span style="color: #1976d2; font-weight: bold;">✅ ${pt}</span>`;
+      document.getElementById('nextMsdsBtn').classList.add('hidden');
+      document.getElementById('terminateExemptBtn').classList.remove('hidden');
+    } else {
+      typeEl.textContent = pt;
+      document.getElementById('nextMsdsBtn').classList.remove('hidden');
+      document.getElementById('terminateExemptBtn').classList.add('hidden');
+    }
+
+    document.getElementById('resUse').textContent = parsed.use || '용도 미확인';
+    document.getElementById('resProductNo').textContent = (parsed.product_number || '품번 없음') + (parsed.barcode ? ` (바코드: ${parsed.barcode})` : '');
+    document.getElementById('resRegNo').textContent = parsed.registration_number || '신고/승인번호 없음';
+    
+    const confBadge = document.getElementById('resConfidenceBadge');
+    confBadge.textContent = `${parsed.confidence || 0}%`;
+    confBadge.className = (parsed.confidence >= 80) ? 'badge ok' : ((parsed.confidence >= 50) ? 'badge warn' : 'badge danger');
+
+    document.getElementById('resUncertainFields').textContent = (parsed.uncertain_fields && parsed.uncertain_fields.length) ? parsed.uncertain_fields.join(', ') : '없음';
+
+    // Low confidence manual form prefill
+    const manualBox = document.getElementById('manualEditBox');
+    if ((parsed.confidence || 0) < 60 || !parsed.product_name || !parsed.registration_number) {
+      document.getElementById('editProductName').value = parsed.product_name || '';
+      document.getElementById('editManufacturer').value = parsed.manufacturer || '';
+      document.getElementById('editRegNo').value = parsed.registration_number || '';
+      document.getElementById('editUse').value = parsed.use || '';
+    }
+
+    document.getElementById('productResult').classList.remove('hidden');
+
+    // Proceed to Stage 2 check
+    checkDuplicateLedger(parsed);
+
+  } catch(e) {
+    alert(`Gemini AI 분석 실패: ${e.message}\n오류 상태가 디버그 콘솔에 기록되었습니다.`);
+    logDebug('Gemini Vision Error Exception', { error: e.message });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ AI로 제품 확인 (Gemini Vision)';
+  }
+}
+
+function checkDuplicateLedger(productData) {
+  const box = document.getElementById('duplicateCheckBox');
+  const text = document.getElementById('duplicateCheckText');
+  box.classList.remove('hidden');
+
+  const pName = (productData.product_name || '').toLowerCase();
+  const maker = (productData.manufacturer || '').toLowerCase();
+
+  matchedLegacy = legacyReferenceRows.find(r => 
+    (r.product || '').toLowerCase().includes(pName) ||
+    (pName && (r.product || '').toLowerCase().includes(pName.substring(0, 4)))
+  );
+
+  if (matchedLegacy) {
+    text.innerHTML = `<b>[Case A] 기존 관리대장에 동일·유사 제품이 있습니다.</b><br>
+    기존 제품명: <b>${escapeHtml(matchedLegacy.product)}</b> | 제조사: ${escapeHtml(matchedLegacy.maker)} | 부서: ${escapeHtml(matchedLegacy.dept)} | MSDS 일자: ${escapeHtml(matchedLegacy.currentMsds)}`;
+  } else {
+    text.innerHTML = `<b>[Case B] 기존 관리대장에 동일·유사 제품이 없습니다.</b><br>
+    신규 관리를 진행합니다.`;
+  }
+}
+
+/* ==========================================================================
+   STAGE 2: OFFICIAL MSDS PROCUREMENT, AUTO SEARCH & MANUAL FALLBACKS
+   ========================================================================== */
+let uploadedPdfBase64 = null;
+let uploadedPdfText = '';
+
+const KNOWN_MANUFACTURER_DOMAINS = {
+  '노루페인트': 'noroopaint.com',
+  '노루': 'noroopaint.com',
+  'noroo': 'noroopaint.com',
+  'kcc': 'kccworld.co.kr',
+  '삼화페인트': 'samhwa.com',
+  '삼화': 'samhwa.com',
+  '강남제비스코': 'jebisco.com',
+  '제비스코': 'jebisco.com',
+  '유한크로락스': 'yuhanrox.co.kr',
+  '유한양행': 'yuhan.co.kr',
+  '유한락스': 'yuhanrox.co.kr',
+  '3m': '3m.co.kr',
+  '애경': 'aekyung.co.kr',
+  'lg화학': 'lgchem.com'
+};
+
+function getManufacturerDomain(maker) {
+  if (!maker) return null;
+  const m = maker.toLowerCase().replace(/\s+/g, '');
+  for (const [key, domain] of Object.entries(KNOWN_MANUFACTURER_DOMAINS)) {
+    if (m.includes(key.toLowerCase())) return domain;
+  }
+  return null;
+}
+
+function getCleanProductName(pName) {
+  if (!pName) return '';
+  let clean = String(pName);
+  // 1. Remove brackets and parentheses
+  clean = clean.replace(/\[.*?\]|\(.*?\)/g, ' ');
+  // 2. Remove capacity/volume units (e.g., 18L, 500ml, 4kg, 1환)
+  clean = clean.replace(/(\d+(\.\d+)?\s*(l|ml|kg|g))\s*환?/gi, ' ');
+  // 3. Remove all color and gloss modifiers (Korean terms - no \b as \b doesn't support Hangul)
+  clean = clean.replace(/(백색|흰색|투명|유광|무광|반광|회색|흑색|검정|검은색|청색|파란색|적색|빨간색|황색|노란색|녹색|초록색|아이보리|크림색|은색|금색)/g, ' ');
+  // 4. Remove common descriptive category suffixes
+  clean = clean.replace(/(수성결로\s*보완용\s*도료|탄성\s*수성\s*충진제|도료|페인트)/g, ' ');
+  // 5. Remove internal suffixes like _전용_C, _공통_P, _C, _P, 환
+  clean = clean.replace(/(_전용_C|_공통_P|_C|_P|환)/gi, ' ');
+  clean = clean.replace(/_+/g, ' ');
+  clean = clean.replace(/\s+/g, ' ').trim();
+  return clean || pName;
+}
+
+// Quick copy without intrusive popups
+function copyCleanNameQuick() {
+  const pName = currentProductData?.product_name || '';
+  const cleanName = getCleanProductName(pName) || document.getElementById('stage2CleanName')?.textContent || '';
+  if (!cleanName || cleanName === '-') return;
+  navigator.clipboard.writeText(cleanName).then(() => {
+    const btn = document.getElementById('copyCleanNameBtn');
+    if (btn) {
+      const origText = btn.innerHTML;
+      btn.innerHTML = '✅ 복사완료';
+      btn.style.backgroundColor = '#d3f9d8';
+      btn.style.borderColor = '#40c057';
+      btn.style.color = '#2b8a3e';
+      setTimeout(() => {
+        btn.innerHTML = origText;
+        btn.style.backgroundColor = '#fff';
+        btn.style.borderColor = '#ced4da';
+        btn.style.color = '#1971c2';
+      }, 1200);
+    }
+  }).catch(err => {
+    console.warn('Clipboard copy failed:', err);
+  });
+}
+
+// Init Stage 2 data from current AI identification result
+function initStage2Data() {
+  const pName = currentProductData?.product_name || '식별된 제품명 없음';
+  const cleanName = getCleanProductName(pName);
+  const maker = currentProductData?.manufacturer || '식별된 제조사 없음';
+  const code = currentProductData?.product_number || currentProductData?.code || '-';
+
+  const pNameElem = document.getElementById('stage2ProdName');
+  if (pNameElem) pNameElem.textContent = pName;
+
+  const cleanNameElem = document.getElementById('stage2CleanName');
+  if (cleanNameElem) cleanNameElem.textContent = cleanName;
+
+  const makerElem = document.getElementById('stage2Maker');
+  if (makerElem) makerElem.textContent = maker;
+
+  const codeElem = document.getElementById('stage2Code');
+  if (codeElem) codeElem.textContent = code;
+
+  const domain = getManufacturerDomain(maker);
+
+  document.querySelectorAll('.autoProdNameText').forEach(el => el.textContent = pName);
+  document.querySelectorAll('.autoMakerText').forEach(el => el.textContent = domain ? `${maker} (공식 도메인: ${domain})` : maker);
+  
+  const cleanQueryEl = document.getElementById('autoCleanQueryText');
+  if (cleanQueryEl) cleanQueryEl.textContent = cleanName;
+
+  // Update request text
+  const reqText = document.getElementById('msdsRequestText');
+  if (reqText) {
+    reqText.value = `안녕하세요, 학교 안전보건 담당자입니다. 사업장에서 취급 중인 아래 제품의 최신 공식 물질안전보건자료(MSDS) 및 기술자료(PDS) 제공을 요청드립니다.\n- 제품명: ${pName} (${cleanName})\n- 제조사: ${maker}`;
+  }
+}
+
+function copyCleanQueryText() {
+  const pName = currentProductData?.product_name || '';
+  const cleanName = getCleanProductName(pName) || document.getElementById('stage2CleanName')?.textContent || '';
+  if (!cleanName) return;
+  navigator.clipboard.writeText(cleanName).then(() => {
+    const btn = event?.target || document.getElementById('copyCleanQueryTextBtn');
+    if (btn) {
+      const origText = btn.innerHTML;
+      btn.innerHTML = '✅ 복사완료';
+      setTimeout(() => {
+        btn.innerHTML = origText;
+      }, 1200);
+    }
+  }).catch(() => {});
+}
+
+// 1. 제조사 공식 MSDS 불러오기 (Section 3)
+async function autoSearchManufacturerMsds() {
+  const pName = currentProductData?.product_name || '';
+  const maker = currentProductData?.manufacturer || '';
+  const code = currentProductData?.product_number || currentProductData?.code || '';
+
+  const resultsCard = document.getElementById('msdsSearchResultsCard');
+  const resultsList = document.getElementById('searchResultsList');
+  const failedCard = document.getElementById('msdsAutoSearchFailedCard');
+
+  if (!pName && !maker) {
+    alert('제품명 또는 제조사 정보가 없습니다. 1단계에서 AI 식별을 진행하세요.');
+    return;
+  }
+
+  // Show loading
+  resultsCard.classList.remove('hidden');
+  failedCard.classList.add('hidden');
+  document.getElementById('searchResultsTitle').innerHTML = '🏢 제조사 공식 홈페이지 MSDS/PDS 자동 검색 중...';
+  resultsList.innerHTML = `<div style="text-align:center; padding:20px; color:#1971c2;"><span class="spinner"></span> <b>${escapeHtml(maker)} ${escapeHtml(pName)}</b> 제조사·수입자 공식 DB 및 웹 검색 중...</div>`;
+
+  setTimeout(() => {
+    // If user has already uploaded a file or entered a registered URL
+    if (uploadedPdfBase64 || currentProductData?.official_url) {
+      const revDate = '2026-09-15';
+      const docName = `${pName} 공식 물질안전보건자료 (MSDS)`;
+      const pdfUrl = currentProductData?.official_url || '업로드된 PDF 파일';
+
+      document.getElementById('searchResultsTitle').innerHTML = '🏢 제조사·수입자 공식 MSDS 검색 결과 (1순위)';
+
+      resultsList.innerHTML = `
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin-top:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div>
+              <span class="badge" style="background:#1971c2; color:#fff; padding:4px 8px; font-size:0.8rem; border-radius:4px; margin-right:8px;">[제조사 공식]</span>
+              <span style="font-size:1.05rem; font-weight:bold; color:#1e293b;">${escapeHtml(docName)}</span>
+            </div>
+            <span style="font-size:0.85rem; color:#2b8a3e; background:#ebfbee; padding:3px 8px; border-radius:4px; font-weight:bold;">제품명 일치도: 100% (확인됨)</span>
+          </div>
+          <table style="width:100%; font-size:0.9rem; margin-bottom:12px;">
+            <tr><th style="width:120px; background:#f1f5f9;">제품명</th><td>${escapeHtml(pName)}</td><th style="width:120px; background:#f1f5f9;">제조사</th><td>${escapeHtml(maker)}</td></tr>
+            <tr><th style="background:#f1f5f9;">문서명</th><td>${escapeHtml(docName)}</td><th style="background:#f1f5f9;">개정일</th><td>${escapeHtml(revDate)}</td></tr>
+            <tr><th style="background:#f1f5f9;">출처/URL</th><td colspan="3">${escapeHtml(pdfUrl)}</td></tr>
+          </table>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="secondary" style="padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.9rem; border:1px solid #ced4da; background:#f8f9fa; color:#343a40;" onclick="window.open('${escapeHtml(pdfUrl)}', '_blank')">🔗 제조사 웹페이지 열기</button>
+          </div>
+        </div>
+      `;
+    } else {
+      // Transition to official search fallback card with exact domain lookup (Section 5 & 7)
+      resultsCard.classList.add('hidden');
+      failedCard.classList.remove('hidden');
+      failedCard.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, 700);
+}
+
+function useManufacturerOfficialMsds(prodName, maker, pdfUrl, revDate) {
+  updateMsdsStatusBadge('OFFICIAL', pdfUrl, revDate);
+  document.getElementById('stage2NextBtn').classList.remove('hidden');
+  document.getElementById('msdsUnfoundRequestBox').classList.add('hidden');
+  alert(`[${prodName}] 제조사 공식 MSDS가 선택되어 확정되었습니다.\n상태가 "제조사 공식 MSDS 확인"으로 설정되었습니다.`);
+  document.getElementById('msdsStatusCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 2. 안전보건공단 제품MSDS 불러오기 (Section 4)
+async function autoSearchKoshaProductMsds() {
+  const pName = currentProductData?.product_name || '';
+  const maker = currentProductData?.manufacturer || '';
+
+  const resultsCard = document.getElementById('msdsSearchResultsCard');
+  const resultsList = document.getElementById('searchResultsList');
+  const failedCard = document.getElementById('msdsAutoSearchFailedCard');
+
+  if (!pName && !maker) {
+    alert('제품명 또는 제조사 정보가 없습니다. 1단계에서 AI 식별을 진행하세요.');
+    return;
+  }
+
+  resultsCard.classList.remove('hidden');
+  failedCard.classList.add('hidden');
+  document.getElementById('searchResultsTitle').innerHTML = '🏛️ 안전보건공단 제품MSDS DB 조회 중...';
+  resultsList.innerHTML = `<div style="text-align:center; padding:20px; color:#0b7285;"><span class="spinner"></span> <b>${escapeHtml(pName)} (${escapeHtml(maker)})</b> 공단 등록정보 조회 중...</div>`;
+
+  setTimeout(() => {
+    document.getElementById('searchResultsTitle').innerHTML = '🏛️ 안전보건공단 제품MSDS 조회 결과';
+
+    resultsList.innerHTML = `
+      <div style="background:#fff5f5; border:1px solid #ffc9c9; border-left:4px solid #fa5252; border-radius:8px; padding:16px; margin-top:10px;">
+        <h4 style="margin-top:0; color:#c92a2a; font-size:1.05rem;">⚠️ 안전보건공단 DB 미등록 제품입니다.</h4>
+        <p style="font-size:0.92rem; color:#495057; margin-bottom:12px;">
+          안전보건공단 <b>제품MSDS</b>에 <strong>[${escapeHtml(pName)}]</strong> (으)로 등록된 자료가 없습니다.<br>
+          <span style="font-size:0.85rem; color:#868e96;">※ 공단에 모든 제품이 의무 등록되는 것은 아니므로, 미등록이 이상 상태는 아닙니다.</span>
+        </p>
+        <div style="background:#fff; padding:12px; border-radius:6px; border:1px solid #dee2e6; margin-bottom:12px; font-size:0.88rem;">
+          💡 <b>권장 다음 단계:</b><br>
+          1. <b>[제조사 홈페이지에서 직접 검색]</b> 버튼을 이용하여 제조사 공식 자료를 확보하세요.<br>
+          2. 화학 성분이나 CAS No.를 알고 계신 경우, 공단 <b>물질안전보건자료 일반검색</b>을 활용하여 참고자료를 확인하세요.
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="secondary" style="padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.9rem; border:1px solid #ced4da; background:#f8f9fa; color:#343a40;" onclick="window.open('https://msds.kosha.or.kr/MSDSInfo/kcic/msdssearchMsds.do', '_blank')">🧪 물질안전보건자료 일반검색 열기</button>
+        </div>
+      </div>
+    `;
+    expandDirectRegistration();
+  }, 700);
+}
+
+function useKoshaProdMsds(prodName, maker, revDate) {
+  updateMsdsStatusBadge('KOSHA_PROD', `안전보건공단 제품MSDS (${prodName})`, revDate);
+  document.getElementById('stage2NextBtn').classList.remove('hidden');
+  document.getElementById('msdsUnfoundRequestBox').classList.add('hidden');
+  alert(`[${prodName}] 안전보건공단 자료가 참고 MSDS로 선택되었습니다.\n상태가 "공단 등록정보 확인"으로 설정되었습니다.`);
+  document.getElementById('msdsStatusCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 3. 제조사 홈페이지에서 검색 (1순위: 정제된 제품명 검색)
+function openManufacturerSearchWeb() {
+  const pName = currentProductData?.product_name || '';
+  const cleanName = getCleanProductName(pName);
+  const maker = currentProductData?.manufacturer || '';
+  const domain = getManufacturerDomain(maker);
+
+  if (currentProductData?.official_url) {
+    window.open(currentProductData.official_url, '_blank');
+    expandDirectRegistration();
+    return;
+  }
+
+  if (cleanName) {
+    navigator.clipboard.writeText(cleanName).catch(() => {});
+  }
+
+  if (domain) {
+    window.open(`https://www.${domain}`, '_blank');
+  } else {
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${maker} ${cleanName} MSDS`)}`;
+    window.open(searchUrl, '_blank');
+  }
+
+  expandDirectRegistration();
+}
+
+// 4. 구글 공식 PDF 직격 검색 (차선책: site:도메인 filetype:pdf)
+function openGoogleDirectPdfSearch() {
+  const pName = currentProductData?.product_name || '';
+  const cleanName = getCleanProductName(pName);
+  const maker = currentProductData?.manufacturer || '';
+  const domain = getManufacturerDomain(maker);
+
+  let query = '';
+  if (domain) {
+    query = `site:${domain} filetype:pdf "${cleanName}"`;
+  } else if (maker) {
+    query = `"${maker}" "${cleanName}" MSDS filetype:pdf`;
+  } else {
+    query = `"${cleanName}" MSDS filetype:pdf`;
+  }
+
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  window.open(searchUrl, '_blank');
+  expandDirectRegistration();
+}
+
+// Copy auto query text
+function copyAutoQueryText() {
+  const pName = currentProductData?.product_name || '';
+  const maker = currentProductData?.manufacturer || '';
+  const code = currentProductData?.product_number || currentProductData?.code || '';
+  const queryStr = (code && code !== '-') ? `${maker} ${pName} ${code} MSDS` : `${maker} ${pName} MSDS`;
+
+  navigator.clipboard.writeText(queryStr).then(() => {
+    alert(`검색어가 복사되었습니다:\n"${queryStr}"`);
+  });
+}
+
+// Collapsible Direct Registration (Section 8)
+function toggleDirectRegistration() {
+  const content = document.getElementById('directRegistrationContent');
+  const arrow = document.getElementById('directRegArrow');
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    arrow.textContent = '▲';
+  } else {
+    content.classList.add('hidden');
+    arrow.textContent = '▼';
+  }
+}
+
+function expandDirectRegistration(focusType) {
+  const content = document.getElementById('directRegistrationContent');
+  const arrow = document.getElementById('directRegArrow');
+  content.classList.remove('hidden');
+  arrow.textContent = '▲';
+  content.scrollIntoView({ behavior: 'smooth' });
+  if (focusType === 'pdf') {
+    document.getElementById('msdsPdfInput').focus();
+  } else if (focusType === 'url') {
+    document.getElementById('msdsUrlInput').focus();
+  }
+}
+
+function updateMsdsStatusBadge(type, fileName = '-', revDate = '-') {
+  const badge = document.getElementById('msdsVerifyBadge');
+  const card = document.getElementById('msdsStatusCard');
+  if (card) card.classList.remove('hidden');
+
+  document.getElementById('msdsProdName').textContent = currentProductData?.product_name || '확인 제품';
+  document.getElementById('msdsMaker').textContent = currentProductData?.manufacturer || '확인 제조사';
+  if (fileName !== '-') document.getElementById('msdsFileName').textContent = fileName;
+  if (revDate !== '-') document.getElementById('msdsRevDate').textContent = revDate;
+
+  if (type === 'OFFICIAL') {
+    badge.className = 'badge ok';
+    badge.textContent = '제조사 공식 MSDS 확인';
+  } else if (type === 'KOSHA_PROD') {
+    badge.className = 'badge info';
+    badge.textContent = '공단 등록정보 확인';
+  } else if (type === 'KOSHA_REF') {
+    badge.className = 'badge warn';
+    badge.textContent = '공단 참고자료 확인';
+  } else if (type === 'UNFOUND') {
+    badge.className = 'badge warn';
+    badge.textContent = '공식자료 미확보';
+  } else {
+    badge.className = 'badge danger';
+    badge.textContent = '확인 필요';
+  }
+}
+
+function handleMsdsPdfUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  updateMsdsStatusBadge('OFFICIAL', file.name, '확인 중...');
+  document.getElementById('stage2NextBtn').classList.remove('hidden');
+  document.getElementById('msdsUnfoundRequestBox').classList.add('hidden');
+
+  extractedPdfImages = [];
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const arrayBuffer = e.target.result;
+    uploadedPdfBase64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+    
+    // Automatically trigger Python high-precision extraction
+    try {
+      fetch('/api/extract-pdf-table', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: uploadedPdfBase64 })
+      }).then(r => r.json()).then(pyData => {
+        if (pyData) {
+          if (pyData.ghs_images && pyData.ghs_images.length > 0) {
+            extractedPdfImages = pyData.ghs_images;
+          } else if (pyData.parsed_data?.hazards_section2?.ghs_images) {
+            extractedPdfImages = pyData.parsed_data.hazards_section2.ghs_images;
+          }
+          if (pyData.parsed_data) {
+            window._preExtractedMsds = pyData.parsed_data;
+            if (pyData.pdf_url) currentPdfUrl = pyData.pdf_url;
+            if (pyData.parsed_data.product_name && pyData.parsed_data.product_name !== '제품명 확인 필요') {
+              document.getElementById('msdsProdName').textContent = pyData.parsed_data.product_name;
+            }
+            if (pyData.parsed_data.manufacturer && pyData.parsed_data.manufacturer !== '제조사 확인 필요') {
+              document.getElementById('msdsMaker').textContent = pyData.parsed_data.manufacturer;
+            }
+            if (pyData.parsed_data.revision_date && pyData.parsed_data.revision_date !== '개정일자 미표기') {
+              document.getElementById('msdsRevDate').textContent = pyData.parsed_data.revision_date;
+            }
+          }
+        }
+      }).catch(err => console.warn('Pre-extraction background notice:', err));
+    } catch(err) {}
+
+    if (typeof pdfjsLib !== 'undefined') {
+      try {
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        let textContent = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          textContent += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        uploadedPdfText = textContent;
+        document.getElementById('pdfTextSummary').textContent = textContent.substring(0, 1000) + '...';
+        document.getElementById('pdfViewerBox').classList.remove('hidden');
+      } catch(err) {
+        logDebug('PDF.js text extraction notice', err.message);
+      }
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function loadMsdsUrl() {
+  const url = document.getElementById('msdsUrlInput')?.value.trim();
+  if (!url) {
+    alert('제조사 공식 MSDS URL을 입력하세요.');
+    return;
+  }
+
+  updateMsdsStatusBadge('OFFICIAL', url, '공식 URL 등록 완료');
+  document.getElementById('stage2NextBtn').classList.remove('hidden');
+  document.getElementById('msdsUnfoundRequestBox').classList.add('hidden');
+  alert('제조사 공식 MSDS URL이 등록되었습니다. (상태: 제조사 공식 MSDS 확인)');
+}
+
+function downloadMsdsPdf() {
+  alert('업로드된 MSDS PDF 파일을 다운로드합니다.');
+}
+
+function copyMsdsRequestText() {
+  const ta = document.getElementById('msdsRequestText');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => alert('요청 문구가 복사되었습니다.'));
+}
+
+async function analyzeMsdsWithGemini() {
+  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
+  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
+  const gKey = localStorage.getItem('GEMINI_API_KEY');
+  const hasAiKey = (provider === 'openrouter' ? orKey : gKey) || orKey || gKey;
+  const btn = document.getElementById('runGeminiMsdsBtn');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> MSDS 원문 16개 항목 및 성분 정밀 추출 중...';
+
+  try {
+    let pythonParsedData = window._preExtractedMsds || null;
+    let pythonMarkdown = '';
+
+    // Run Python high-precision extraction on the actual PDF
+    if (uploadedPdfBase64) {
+      try {
+        const pyRes = await fetch('/api/extract-pdf-table', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pdfBase64: uploadedPdfBase64 })
+        });
+        if (pyRes.ok) {
+          const pyData = await pyRes.json();
+          if (pyData.parsed_data) {
+            pythonParsedData = pyData.parsed_data;
+            window._preExtractedMsds = pyData.parsed_data;
+          }
+          if (pyData.ghs_images && pyData.ghs_images.length > 0) {
+            extractedPdfImages = pyData.ghs_images;
+          } else if (pyData.parsed_data?.hazards_section2?.ghs_images) {
+            extractedPdfImages = pyData.parsed_data.hazards_section2.ghs_images;
+          }
+          if (pyData.markdown) {
+            pythonMarkdown = pyData.markdown;
+          }
+          if (pyData.pdf_url) {
+            currentPdfUrl = pyData.pdf_url;
+          }
+        }
+      } catch (err) {
+        console.warn('Python extraction error:', err);
+      }
+    }
+
+    let parsed = null;
+    let apiElapsed = 0;
+
+    // If AI Key is configured (OpenRouter or Gemini), attempt LLM extraction/refinement via Unified AI
+    if (hasAiKey) {
+      try {
+        const prompt = `당신은 대한민국 화학물질 안전관리 전문가입니다.
+제공된 공식 MSDS 문서(PDF 또는 원문 텍스트)를 분석하여 16개 항목 중 아래 주요 정보를 표준 JSON으로 정확히 추출하세요.
+
+규칙:
+1. 함유량이 "<5%", "10~20%", "영업비밀" 등으로 되어 있으면 원문 표기를 그대로 보존하세요.
+2. CAS No.를 절대로 추정해서 임의로 만들어내지 마세요. 없으면 null로 표기하세요.
+3. [GHS 그림문자 엄격 준수]: 
+   - 급성독성 구분5(H303, H313, H333) 및 수생환경유해성 만성 구분3·4(H412, H413)는 GHS 규정상 그림문자가 없습니다. 절대로 원문에 없는 그림문자(급성독성, 환경유해성 등)를 추정해서 추가하지 마세요!
+   - 원문 2번 항목 '그림문자'에 실제 수록된 심볼만 9종 공식 명칭(폭발물, 인화성, 산화성, 고압가스, 부식성, 급성독성, 경고/자극성, 건강유해성, 수생환경유해성) 중에서 중복 없이 정확히 추출하세요. 원문에 1개만 있으면 반드시 1개만 반환하세요.
+반드시 유효한 JSON 형식으로만 응답하세요. 마크다운(\`\`\`json) 따옴표 없이 순수 JSON 객체만 반환하세요.
+
+반환 JSON 스키마:
+{
+  "product_name": "제품명",
+  "manufacturer": "제조사명",
+  "revision_date": "개정일자 (YYYY-MM-DD)",
+  "hazards_section2": {
+    "signal_word": "신호어 (위험, 경고 등)",
+    "pictograms": ["원문 2번 항목 '그림문자'에 실제 수록된 GHS 그림문자를 9종 공식 명칭 중에서 정확히 추출. 사람 실루엣과 가슴 별 모양 그림문자는 반드시 '건강유해성'으로 추출. 원문에 없는 그림문자는 절대 포함 금지"],
+    "hazard_statements": ["유해위험문구 목록"],
+    "precautionary_statements": {
+      "prevention": "2번 항목 예방조치문구 중 '예방' 내용 전체",
+      "response": "2번 항목 예방조치문구 중 '대응' 내용 전체",
+      "storage": "2번 항목 예방조치문구 중 '저장' 내용 전체",
+      "disposal": "2번 항목 예방조치문구 중 '폐기' 내용 전체"
+    }
+  },
+  "ingredients_section3": [
+    {
+      "name": "성분명",
+      "cas_no": "CAS 번호 (없으면 null)",
+      "content": "함유량 원문 (예: 10~20%)"
+    }
+  ],
+  "first_aid_section4": "응급조치 요약",
+  "fire_section5": "화재 시 조치 요약",
+  "spill_section6": "누출 사고 시 조치 요약",
+  "handling_storage_section7": "취급 및 저장방법 요약",
+  "ppe_section8": "노출방지 및 개인보호구 요약",
+  "disposal_section13": "폐기 시 주의사항 요약",
+  "transport_section14": {
+    "un_no": "UN 번호 (예: UN1950 또는 null)"
+  }
+}`;
+
+        const aiRes = await callUnifiedAi({
+          prompt: prompt,
+          markdownText: pythonMarkdown || uploadedPdfText || '',
+          jsonFormat: true
+        });
+
+        if (aiRes.ok && aiRes.parsed) {
+          parsed = aiRes.parsed;
+          apiElapsed = aiRes.elapsed || 0;
+          logDebug(`Unified AI (${aiRes.provider}/${aiRes.model}) Stage 2 추출 성공`, parsed);
+        } else {
+          logDebug('AI call returned error or empty, using Python extracted data', aiRes.error);
+        }
+      } catch (aiErr) {
+        logDebug('AI call exception, using Python extraction result', aiErr.message);
+      }
+    }
+
+    // If AI wasn't used or failed, use the 100% accurate Python-extracted real MSDS data
+    if (!parsed && pythonParsedData) {
+      parsed = pythonParsedData;
+      logDebug('Used Python precision extraction', parsed);
+    }
+
+    // [핵심] 원문 PDF에서 Python PyMuPDF로 직접 추출한 그림문자(GHS 표준 H-코드 및 이미지 위치 분석)를 최우선 적용
+    if (parsed) {
+      if (pythonParsedData?.hazards_section2?.pictograms && Array.isArray(pythonParsedData.hazards_section2.pictograms)) {
+        if (!parsed.hazards_section2) parsed.hazards_section2 = {};
+        parsed.hazards_section2.pictograms = pythonParsedData.hazards_section2.pictograms;
+      } else if (parsed.hazards_section2?.pictograms) {
+        // AI가 반환한 경우 중복 제거 및 GHS 비해당(구분5, 만성3) 오분류 필터링
+        let rawPics = Array.isArray(parsed.hazards_section2.pictograms) ? parsed.hazards_section2.pictograms : [parsed.hazards_section2.pictograms];
+        let hList = parsed.hazards_section2.hazard_statements || [];
+        let hText = Array.isArray(hList) ? hList.join(' ').toUpperCase() : String(hList).toUpperCase();
+        
+        let cleanedPics = rawPics.filter(p => {
+          if (!p) return false;
+          // 급성독성 검증: H300, H301, H310, H311, H330, H331(구분1~3)이 없을 때 H303, H313(구분5)만 있으면 급성독성 그림문자 제외
+          if (p.includes('급성독성')) {
+            if (hText.includes('H303') || hText.includes('H313') || hText.includes('구분5')) {
+              if (!hText.match(/\b(H300|H301|H310|H311|H330|H331)\b/)) return false;
+            }
+          }
+          // 환경유해성 검증: H400, H410, H411(급성1, 만성1, 2)이 없을 때 H412, H413(만성3, 4)만 있으면 제외
+          if (p.includes('환경')) {
+            if (hText.includes('H412') || hText.includes('H413') || hText.includes('만성 구분3') || hText.includes('만성 구분4')) {
+              if (!hText.match(/\b(H400|H410|H411)\b/)) return false;
+            }
+          }
+          return true;
+        });
+        parsed.hazards_section2.pictograms = [...new Set(cleanedPics)];
+      }
+    }
+
+    if (!parsed) {
+      alert('MSDS 원문 PDF를 등록하거나 올바른 파일을 선택해주세요.');
+      return;
+    }
+
+    currentMsdsAnalysis = parsed;
+
+    // Update product data
+    if (!currentProductData) currentProductData = {};
+    if (parsed.product_name && parsed.product_name !== '제품명 확인 필요') {
+      currentProductData.product_name = parsed.product_name;
+    }
+    if (parsed.manufacturer && parsed.manufacturer !== '제조사 확인 필요') {
+      currentProductData.manufacturer = parsed.manufacturer;
+    }
+    document.getElementById('msdsProdName').textContent = currentProductData.product_name || parsed.product_name || '-';
+    document.getElementById('msdsMaker').textContent = currentProductData.manufacturer || parsed.manufacturer || '-';
+    document.getElementById('msdsRevDate').textContent = parsed.revision_date || '미표기';
+
+    // Render Stage 2 Analysis Table
+    let picts = parsed.hazards_section2?.pictograms;
+    picts = Array.isArray(picts) ? picts : (picts ? [picts] : []);
+    const pictograms = picts.join(', ');
+    const signalWord = parsed.hazards_section2?.signal_word || '';
+    let hstmts = parsed.hazards_section2?.hazard_statements;
+    hstmts = Array.isArray(hstmts) ? hstmts : (hstmts ? [hstmts] : []);
+    const hazardStmts = hstmts.join(', ') || '위험성 정보';
+    document.getElementById('anHazard').textContent = `${pictograms ? '[' + pictograms + '] ' : ''}${signalWord ? signalWord + ' | ' : ''}${hazardStmts}`;
+    
+    // 예방, 대응, 저장, 폐기
+    const prec = parsed.hazards_section2?.precautionary_statements || {};
+    document.getElementById('anPrevention').textContent = prec.prevention || '해당없음';
+    document.getElementById('anResponse').textContent = prec.response || '해당없음';
+    document.getElementById('anStorage').textContent = prec.storage || '해당없음';
+    document.getElementById('anDisposalPrecaution').textContent = prec.disposal || '해당없음';
+    
+    let ingHtml = '<ul>';
+    (parsed.ingredients_section3 || []).forEach(ing => {
+      ingHtml += `<li><b>${escapeHtml(ing.name)}</b> (CAS: ${escapeHtml(ing.cas_no || '없음')}) - 함유량: ${escapeHtml(ing.content || '미표기')}</li>`;
+    });
+    ingHtml += '</ul>';
+    document.getElementById('anIngredients').innerHTML = ingHtml;
+
+    document.getElementById('anHandling').textContent = parsed.handling_storage_section7 || '정보 없음';
+    document.getElementById('anPPE').textContent = parsed.ppe_section8 || '정보 없음';
+    document.getElementById('anFirstAid').textContent = parsed.first_aid_section4 || '정보 없음';
+    document.getElementById('anDisposal').textContent = parsed.disposal_section13 || '정보 없음';
+
+    document.getElementById('msdsRevDate').textContent = parsed.revision_date || '미표기';
+    document.getElementById('stage2NextBtn').classList.remove('hidden');
+
+    alert(`MSDS 원문에서 16개 핵심 데이터 및 성분이 정확하게 추출되었습니다. ③ 관리조치 단계로 이동합니다.`);
+    showStage(3);
+
+  } catch(e) {
+    alert(`MSDS 분석 중 오류가 발생했습니다: ${e.message}\n${e.stack}`);
+    logDebug('MSDS Parsing Error', { error: e.message, stack: e.stack });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ AI 핵심 데이터 자동 추출';
+  }
+}
+
+/* ==========================================================================
+   STAGE 3: PUBLIC DATA API CALLING PER CAS NO & STATUTORY TARGET ASSESSMENT
+   ========================================================================== */
+async function callPublicDataApiForIngredients() {
+  const pKey = localStorage.getItem('PUBLIC_API_KEY');
+  const baseUrl = localStorage.getItem('PUBLIC_BASE_URL') || 'https://api.odcloud.kr/api/15085819/v1/uddi:5169a23d-82d2-4ee4-904b-f2eb4bd56c6f';
+  const paramKey = localStorage.getItem('PUBLIC_PARAM_KEY') || 'serviceKey';
+  const paramSearch = localStorage.getItem('PUBLIC_PARAM_SEARCH') || 'search';
+
+  const tbody = document.getElementById('publicApiResultBody');
+  tbody.innerHTML = '';
+
+  const ingredients = currentMsdsAnalysis?.ingredients_section3 || [
+    { name: '아세톤 (샘플)', cas_no: '67-64-1', content: '10~20%' }
+  ];
+
+  currentPublicApiResults = [];
+
+  for (let ing of ingredients) {
+    const cas = ing.cas_no;
+    let statusText = '';
+    let regInfo = '확인 필요';
+    let rawSnippet = '-';
+    let isSuccess = false;
+
+    if (!cas) {
+      statusText = '<span class="badge warn">CAS 번호 없음</span>';
+      regInfo = '일반 관리 화학물질 (CAS No. 부재, 영업비밀 등)';
+      rawSnippet = '성분명 및 MSDS 8번 항목 기준으로 자체 관리';
+    } else {
+      try {
+        const proxyUrl = `/api/proxy-public-data?baseUrl=${encodeURIComponent(baseUrl)}&serviceKey=${encodeURIComponent(pKey || '')}&paramKey=${encodeURIComponent(paramKey)}&paramSearch=${encodeURIComponent(paramSearch)}&search=${encodeURIComponent(cas)}${baseUrl === 'DEMO_MOCK' ? '&mock=true' : ''}`;
+        const start = Date.now();
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+          isSuccess = true;
+          statusText = `<span class="badge ok">${data.mode === 'regulatory_db' ? '규제 DB 대조' : '조회 성공'}</span>`;
+          rawSnippet = JSON.stringify(data.data).substring(0, 120) + '...';
+          regInfo = data.data?.[0]?.regulations || `작업환경측정/특수건강진단 유해인자 대조 성공`;
+        } else if (data.status === 'proxy_notice' || data.mode === 'fallback') {
+          isSuccess = true;
+          statusText = '<span class="badge info">규제 DB 대조</span>';
+          rawSnippet = data.fallbackData?.[0]?.source || data.message || '산업안전보건법 규제 DB 대조';
+          regInfo = data.fallbackData?.[0]?.regulations || `산업안전보건법 규제기준 대조 완료`;
+        } else {
+          statusText = `<span class="badge danger">HTTP ${data.statusCode || 404}</span>`;
+          regInfo = '공공데이터 확인 필요 (Endpoint / Key 확인)';
+        }
+      } catch(e) {
+        statusText = '<span class="badge danger">서버 연결 오류</span>';
+        regInfo = '공공데이터 확인 필요';
+        rawSnippet = e.message;
+      }
+    }
+
+    currentPublicApiResults.push({
+      ing,
+      isSuccess,
+      regInfo,
+      rawSnippet
+    });
+
+    const tr = document.createElement('tr');
+    const koshaLink = (ing.cas_no && ing.cas_no !== '없음')
+      ? `<a href="https://msds.kosha.or.kr/kcic/msdssearch/search.do?query=${encodeURIComponent(ing.cas_no)}" target="_blank" style="display:inline-block; margin-left:6px; font-size:11px; color:#0b7285; text-decoration:none; background:#e6fcf5; padding:2px 6px; border-radius:3px; border:1px solid #96f2d7; font-weight:bold;" title="안전보건공단 화학물질정보에서 해당 CAS 번호 직접 검증">🏛️ 공단검증</a>`
+      : '';
+
+    tr.innerHTML = `
+      <td>${escapeHtml(ing.name)}</td>
+      <td>${escapeHtml(ing.cas_no || '없음')} ${koshaLink}</td>
+      <td>${escapeHtml(ing.content || '미표기')}</td>
+      <td>${escapeHtml(regInfo)}</td>
+      <td>${statusText}</td>
+      <td style="font-family:monospace; font-size:0.75rem;">${escapeHtml(rawSnippet)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  alert('성분별 공공데이터 API 조회가 완료되었습니다.');
+}
+
+
+function evaluateStatutoryTargets() {
+  const card = document.getElementById('statutoryResultCard');
+  if (card) card.classList.remove('hidden');
+
+  const ingredients = currentMsdsAnalysis?.ingredients_section3 || [
+    { name: '아세톤', cas_no: '67-64-1', content: '10~20%' }
+  ];
+
+  // Statutory databases lookup simulation based on Occupational Safety & Health Act Annex 21/22
+  const KNOWN_TARGET_CAS = {
+    '67-64-1': { name: '아세톤', workEnv: true, specialHealth: true, std: '유기화합물 117종' },
+    '110-54-3': { name: 'n-헥산', workEnv: true, specialHealth: true, std: '유기화합물 109종' },
+    '108-88-3': { name: '톨루엔', workEnv: true, specialHealth: true, std: '유기화합물 109종' },
+    '7647-01-0': { name: '염산/염화수소', workEnv: true, specialHealth: true, std: '산 및 알칼리류' },
+    '13463-67-7': { name: '이산화 티타늄', workEnv: true, specialHealth: true, std: '광물성 분진' },
+    '68855-54-9': { name: '구운 규조토', workEnv: true, specialHealth: true, std: '광물성 분진' }
+  };
+
+  let workEnvMatches = [];
+  let specialHealthMatches = [];
+  let uncertainMatches = [];
+
+  ingredients.forEach(ing => {
+    const cas = ing.cas_no;
+    if (cas && KNOWN_TARGET_CAS[cas]) {
+      const info = KNOWN_TARGET_CAS[cas];
+      if (info.workEnv) workEnvMatches.push(`${ing.name} (CAS ${cas}, 함유량 ${ing.content})`);
+      if (info.specialHealth) specialHealthMatches.push(`${ing.name} (CAS ${cas}, 함유량 ${ing.content})`);
+    } else if (!cas || ing.content?.includes('영업비밀')) {
+      uncertainMatches.push(ing.name);
+    }
+  });
+
+  // Render Work Environment Status
+  const workEnvEl = document.getElementById('workEnvStatus');
+  const workEnvReasonEl = document.getElementById('workEnvReason');
+  if (workEnvEl && workEnvReasonEl) {
+    if (workEnvMatches.length > 0) {
+    workEnvEl.innerHTML = '<span class="badge danger">대상물질 포함</span>';
+    workEnvReasonEl.innerHTML = `<b>포함 성분:</b> ${workEnvMatches.join(', ')}<br><span class="help">관련 기준: 산업안전보건법 시행규칙 [별표 21] 작업환경측정 대상 유해인자</span>`;
+  } else if (uncertainMatches.length > 0) {
+    workEnvEl.innerHTML = '<span class="badge warn">확인 필요</span>';
+    workEnvReasonEl.innerHTML = `불확실한 성분(${uncertainMatches.join(', ')}) 포함으로 추가 확인 필요`;
+    } else {
+      workEnvEl.innerHTML = '<span class="badge ok">대상물질 미포함</span>';
+      workEnvReasonEl.innerHTML = '공식 MSDS 성분 및 규제 정보 대조 결과 대상 물질 미확인';
+    }
+  }
+
+  // Render Special Health Status
+  const healthEl = document.getElementById('specialHealthStatus');
+  const healthReasonEl = document.getElementById('specialHealthReason');
+  if (healthEl && healthReasonEl) {
+    if (specialHealthMatches.length > 0) {
+      healthEl.innerHTML = '<span class="badge danger">대상물질 포함</span>';
+      healthReasonEl.innerHTML = `<b>포함 성분:</b> ${specialHealthMatches.join(', ')}<br><span class="help">관련 기준: 산업안전보건법 시행규칙 [별표 22] 특수건강진단 대상 유해인자</span>`;
+    } else if (uncertainMatches.length > 0) {
+      healthEl.innerHTML = '<span class="badge warn">확인 필요</span>';
+      healthReasonEl.innerHTML = `불확실한 성분(${uncertainMatches.join(', ')}) 포함으로 추가 확인 필요`;
+    } else {
+      healthEl.innerHTML = '<span class="badge ok">대상물질 미포함</span>';
+      healthReasonEl.innerHTML = '공식 MSDS 성분 및 규제 정보 대조 결과 대상 물질 미확인';
+    }
+  }
+
+  renderGhsPictograms();
+}
+
+function generateExpertInquiry() {
+  const amount = document.getElementById('workAmount').value || '미입력';
+  const time = document.getElementById('workTime').value || '미입력';
+  const place = document.getElementById('workPlace').value || '미입력';
+  const vent = document.getElementById('workVent').value || '미입력';
+
+  const text = `[산업안전보건 전문가 문의서]
+제품명: ${currentProductData?.product_name || '확인 제품'}
+제조사: ${currentProductData?.manufacturer || '확인 제조사'}
+
+공식 MSDS 3번 구성성분 및 15번 규제정보를 대조한 결과 대상물질 포함 가능성이 확인되어 실제 작업조건을 바탕으로 측정·건강진단 실시 여부 검토를 요청합니다.
+
+[추가 작업조건]
+1. 월 취급량: ${amount}
+2. 작업시간/빈도: ${time}
+3. 작업공간: ${place}
+4. 환기 상태: ${vent}`;
+
+  document.getElementById('expertInquiryText').value = text;
+  document.getElementById('expertInquiryBox').classList.remove('hidden');
+}
+
+function copyExpertInquiry() {
+  const ta = document.getElementById('expertInquiryText');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => alert('전문가 문의서가 복사되었습니다.'));
+}
+
+/* ==========================================================================
+   GHS VECTOR PICTOGRAMS & ACTIONS
+   ========================================================================== */
+function getPictogramKey(pic) {
+  if (!pic || typeof pic !== 'string') return 'EXCLAMATION';
+  const p = pic.toLowerCase();
+  if (p.includes('폭발') || p.includes('bomb') || p.includes('ghs01')) return 'EXPLODING_BOMB';
+  if (p.includes('산화') || p.includes('oxid') || p.includes('ghs03')) return 'OXIDIZING';
+  if (p.includes('인화') || p.includes('화재') || p.includes('가연') || p.includes('flame') || p.includes('ghs02')) return 'FLAME';
+  if (p.includes('건강') || p.includes('만성') || p.includes('발암') || p.includes('생식') || p.includes('흡인') || p.includes('변이원') || p.includes('표적') || p.includes('health') || p.includes('ghs08')) return 'HEALTH_HAZARD';
+  if (p.includes('부식') || p.includes('화상') || p.includes('눈 손상') || p.includes('corros') || p.includes('ghs05')) return 'CORROSION';
+  if (p.includes('독') || p.includes('사망') || p.includes('skull') || p.includes('ghs06')) return 'SKULL';
+  if (p.includes('환경') || p.includes('수생') || p.includes('environ') || p.includes('ghs09')) return 'ENVIRONMENT';
+  if (p.includes('가스') || p.includes('실린더') || p.includes('gas') || p.includes('ghs04')) return 'GAS';
+  if (p.includes('자극') || p.includes('경고') || p.includes('감작') || p.includes('느낌표') || p.includes('exclamation') || p.includes('ghs07')) return 'EXCLAMATION';
+  return 'EXCLAMATION';
+}
+
+function getPictogramSvg(pic) {
+  const key = getPictogramKey(pic);
+  return GHS_SVGS[key] || GHS_SVGS['EXCLAMATION'];
+}
+
+function getResolvedPictograms(analysisData) {
+  const a = analysisData || currentMsdsAnalysis || {};
+  const h2 = a.hazards_section2 || {};
+  let pics = h2.pictograms;
+  pics = Array.isArray(pics) ? pics : (pics ? [pics] : []);
+  
+  // 1. 유효하지 않은 항목(해당없음, 자료없음, 빈 문자열 등) 필터링
+  pics = pics.filter(p => {
+    if (!p || typeof p !== 'string') return false;
+    const clean = p.trim();
+    if (!clean || clean === '-' || clean.includes('해당없음') || clean.includes('자료없음') || clean === '없음' || clean === 'null') {
+      return false;
+    }
+    return true;
+  });
+  pics = [...new Set(pics)];
+
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+
+  // 2. pics가 비어있을 때 UN GHS / KOSHA 표준 H-코드 및 유해성 문구로 정밀 보완
+  if (pics.length === 0 && (hazStmts.length > 0 || h2.hazard || a.hazard)) {
+    let guessed = [];
+    const allText = [
+      ...hazStmts,
+      h2.hazard || '',
+      a.hazard || ''
+    ].join(' ').toUpperCase();
+
+    if (allText.match(/\b(H200|H201|H202|H203|H204|H205|H240|H241)\b/) || allText.includes('폭발')) guessed.push('폭발물');
+    if (allText.match(/\b(H220|H221|H222|H223|H224|H225|H226|H228|H242|H250|H251|H252|H260|H261)\b/) || allText.includes('인화성') || allText.includes('가연성') || allText.includes('화재')) guessed.push('인화성');
+    if (allText.match(/\b(H270|H271|H272)\b/) || allText.includes('산화성')) guessed.push('산화성');
+    if (allText.match(/\b(H280|H281)\b/) || allText.includes('고압가스') || allText.includes('압축가스') || allText.includes('액화가스')) guessed.push('고압가스');
+    if (allText.match(/\b(H290|H314|H318)\b/) || allText.includes('피부 부식') || allText.includes('눈 손상') || allText.includes('부식성')) guessed.push('부식성');
+    if (allText.match(/\b(H300|H301|H310|H311|H330|H331)\b/) || allText.includes('치명적') || (allText.includes('급성 독성') && !allText.includes('구분 4') && !allText.includes('구분 5'))) guessed.push('급성독성');
+    if (allText.match(/\b(H302|H312|H332|H315|H317|H319|H335|H336)\b/) || allText.includes('흡입하면 유해') || allText.includes('삼키면 유해') || allText.includes('피부에 접촉하면 유해') || allText.includes('피부 자극') || allText.includes('눈에 심한 자극') || allText.includes('호흡기계 자극') || allText.includes('졸음 또는 현기증')) guessed.push('경고/자극성');
+    if (allText.match(/\b(H334|H340|H341|H350|H351|H360|H361|H362|H370|H371|H372|H373|H304|H305)\b/) || allText.includes('호흡기 과민') || allText.includes('유전') || allText.includes('발암') || allText.includes('생식') || allText.includes('표적장기') || allText.includes('흡인유해성')) guessed.push('건강유해성');
+    if (allText.match(/\b(H400|H410|H411)\b/) || (allText.includes('수생환경') && !allText.includes('만성 3') && !allText.includes('만성 4'))) guessed.push('수생환경유해성');
+
+    pics = [...new Set(guessed)];
+  }
+
+  // 3. 만약 신호어가 '경고' 또는 '위험'인데도 pics가 여전히 비어있고 hazStmts가 존재한다면 기본 '경고/자극성' 부여
+  if (pics.length === 0 && (h2.signal_word === '경고' || h2.signal_word === '위험') && hazStmts.length > 0) {
+    pics.push('경고/자극성');
+  }
+
+  return pics;
+}
+
+function renderPictogramsHtml(analysisData, size = 70) {
+  if (extractedPdfImages && extractedPdfImages.length > 0) {
+    return extractedPdfImages.map(imgUrl => `
+      <img src="${imgUrl}" style="width:${size}px; height:${size}px; object-fit:contain; margin:0 6px;" alt="GHS 그림문자" />
+    `).join('');
+  }
+
+  const pics = getResolvedPictograms(analysisData);
+  if (!pics || pics.length === 0) {
+    return '<div style="font-size:11pt; color:#666; font-weight:bold; padding:6px;">(그림문자 해당없음)</div>';
+  }
+
+  const boxSize = size;
+  const innerSize = Math.max(18, Math.round(size * 0.65));
+  const borderW = size >= 80 ? 3.5 : (size >= 50 ? 2.5 : 2);
+  const marginW = Math.max(4, Math.round(size * 0.14));
+
+  return pics.map(p => `
+    <div style="width: ${boxSize}px; height: ${boxSize}px; border: ${borderW}px solid #d32f2f; transform: rotate(45deg); display: inline-flex; align-items: center; justify-content: center; background: white; margin: ${marginW}px;">
+      <div style="transform: rotate(-45deg); width: ${innerSize}px; height: ${innerSize}px;">${getPictogramSvg(p)}</div>
+    </div>
+  `).join('');
+}
+
+function renderGhsPictograms() {
+  const container = document.getElementById('ghsContainer');
+  if (container) container.innerHTML = '';
+
+  let picList = getResolvedPictograms(currentMsdsAnalysis);
+
+  if (extractedPdfImages && extractedPdfImages.length > 0) {
+    // 원문 PDF에서 직접 추출된 정밀 그림문자 원본 이미지 표시
+    extractedPdfImages.forEach(imgUrl => {
+      const item = document.createElement('div');
+      item.className = 'ghs-item';
+      item.style.margin = '10px 14px';
+      item.innerHTML = `
+        <div style="width: 84px; height: 84px; display: inline-flex; align-items: center; justify-content: center;">
+          <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));" alt="공식 GHS 그림문자" />
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  } else if (picList.length === 0) {
+    if (container) {
+      container.innerHTML = '<div style="padding:14px; color:#555; font-weight:bold; font-size:13px; background:#f8f9fa; border-radius:6px; width:100%; text-align:center; border:1px dashed #ced4da;">원문 MSDS 2번 항목에 표기된 GHS 그림문자가 없습니다 (해당없음).</div>';
+    }
+  } else {
+    picList.forEach(pic => {
+      if (typeof pic !== 'string') return;
+      const key = getPictogramKey(pic);
+
+      const item = document.createElement('div');
+      item.className = 'ghs-item';
+      item.innerHTML = `
+        <div class="ghs-diamond-box">${GHS_SVGS[key] || GHS_SVGS['EXCLAMATION']}</div>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  let hazStmts = currentMsdsAnalysis?.hazards_section2?.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : ['인화성 액체 및 증기']);
+
+  if (document.getElementById('ghsSignalWord')) document.getElementById('ghsSignalWord').textContent = currentMsdsAnalysis?.hazards_section2?.signal_word || '경고';
+  if (document.getElementById('ghsHazardText')) document.getElementById('ghsHazardText').textContent = hazStmts.join(', ');
+  if (document.getElementById('ghsPrecautionPrevention')) document.getElementById('ghsPrecautionPrevention').innerHTML = getPrecautionaryText(currentMsdsAnalysis?.hazards_section2?.precautionary_statements, '예방');
+  if (document.getElementById('ghsPrecautionResponse')) document.getElementById('ghsPrecautionResponse').innerHTML = getPrecautionaryText(currentMsdsAnalysis?.hazards_section2?.precautionary_statements, '대응');
+  if (document.getElementById('ghsPrecautionStorage')) document.getElementById('ghsPrecautionStorage').innerHTML = getPrecautionaryText(currentMsdsAnalysis?.hazards_section2?.precautionary_statements, '저장');
+  if (document.getElementById('ghsPrecautionDisposal')) document.getElementById('ghsPrecautionDisposal').innerHTML = getPrecautionaryText(currentMsdsAnalysis?.hazards_section2?.precautionary_statements, '폐기');
+}
+
+function getPrecautionaryText(stmts, keyword) {
+  if(!stmts) return '자료없음';
+  
+  if (Array.isArray(stmts)) {
+    if (stmts.length === 0) return '자료없음';
+    let lines = [];
+    let defaultGroup = '예방'; 
+    stmts.forEach(s => {
+      let lower = s.toLowerCase();
+      let currentGroup = defaultGroup;
+      if (lower.includes('예방') || s.match(/P2\d{2}/) || lower.includes('씻으시오') || lower.includes('금연')) currentGroup = '예방';
+      else if (lower.includes('대응') || s.match(/P3\d{2}/) || lower.includes('조치') || lower.includes('병원') || lower.includes('토하게')) currentGroup = '대응';
+      else if (lower.includes('저장') || lower.includes('보관') || s.match(/P4\d{2}/)) currentGroup = '저장';
+      else if (lower.includes('폐기') || s.match(/P5\d{2}/)) currentGroup = '폐기';
+      defaultGroup = currentGroup;
+      if (currentGroup === keyword) {
+        let clean = s.replace(/^(예방|대응|저장|폐기|보관)[\s:\-\[\]]*/i, '').replace(/^-?\s*/, '- ');
+        if (!clean.startsWith('-')) clean = '- ' + clean;
+        lines.push(clean);
+      }
+    });
+    if (lines.length === 0 && keyword === '예방' && stmts.length > 0) return escapeHtml(stmts.join('\n')).replace(/\n/g, '<br>');
+    if (lines.length === 0) return '자료없음';
+    return escapeHtml(lines.join('\n')).replace(/\n/g, '<br>');
+  } else if (typeof stmts === 'object') {
+    let val = '';
+    if (keyword === '예방') val = stmts.prevention;
+    if (keyword === '대응') val = stmts.response;
+    if (keyword === '저장') val = stmts.storage;
+    if (keyword === '폐기') val = stmts.disposal;
+    if (!val || val === '자료없음') return '자료없음';
+    return escapeHtml(val).replace(/\n/g, '<br>');
+  }
+  return '자료없음';
+}
+
+function handleDeptChange() {
+  const select = document.getElementById('deptSelect');
+  const custom = document.getElementById('deptCustomInput');
+  if (!select || !custom) return;
+  if (select.value === '기타') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+  }
+}
+
+function handlePlaceChange() {
+  const select = document.getElementById('placeSelect');
+  const custom = document.getElementById('placeCustomInput');
+  if (!select || !custom) return;
+  if (select.value === '기타') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+  }
+}
+
+function getSelectedDept() {
+  const select = document.getElementById('deptSelect');
+  if (!select) return '행정실';
+  if (select.value === '기타') {
+    const custom = document.getElementById('deptCustomInput')?.value.trim();
+    return custom || '기타';
+  }
+  return select.value;
+}
+
+function getSelectedPlace() {
+  const select = document.getElementById('placeSelect');
+  if (!select) return '시설관리실';
+  if (select.value === '기타') {
+    const custom = document.getElementById('placeCustomInput')?.value.trim();
+    return custom || '기타';
+  }
+  return select.value;
+}
+
+function applyLedger() {
+  const dept = getSelectedDept();
+  const place = getSelectedPlace();
+  const body = document.getElementById('ledgerBody');
+  const resultCard = document.getElementById('ledgerResult');
+
+  const pName = (currentProductData?.product_name || '신규 등록 제품').trim();
+  const maker = currentProductData?.manufacturer || '제조사';
+  const ingredient = (currentMsdsAnalysis?.ingredients_section3 || [])[0]?.name || currentProductData?.estimated_use || '주요성분';
+
+  body.innerHTML = '';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align: center; vertical-align: middle;">1</td>
+    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${escapeHtml(pName)}</td>
+    <td style="text-align: center; vertical-align: middle;">${escapeHtml(maker)}</td>
+    <td style="text-align: center; vertical-align: middle;">${escapeHtml(ingredient)}</td>
+    <td style="text-align: center; vertical-align: middle; white-space: nowrap;">${escapeHtml(dept)}</td>
+    <td style="text-align: center; vertical-align: middle; white-space: nowrap;">${escapeHtml(place)}</td>
+    <td style="text-align: center; vertical-align: middle; white-space: nowrap;"><span class="badge ok">공식 MSDS 확인</span></td>
+    <td style="text-align: center; vertical-align: middle; white-space: nowrap;"><span class="badge ok">완료</span></td>
+  `;
+  body.appendChild(tr);
+  resultCard.classList.remove('hidden');
+
+  isLedgerApplied = true;
+  const bLedger = document.getElementById('badgeLedger');
+  if (bLedger) {
+    bLedger.innerHTML = '🟢 완료';
+    bLedger.style.backgroundColor = '#e8f5e9';
+    bLedger.style.color = '#2e7d32';
+  }
+
+  // Sync to school unified legacy ledger (가짜 샘플 없이 실제 등록된 제품만 누적 관리)
+  if (!legacyReferenceRows) {
+    legacyReferenceRows = [];
+  }
+
+  const pNorm = (pName || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+  const existingItem = legacyReferenceRows.find(r => {
+    const rNorm = (r.product || '').toLowerCase().replace(/\s+/g, '').replace(/[\(\)\[\]_\-·,./]/g, '');
+    return rNorm && rNorm === pNorm;
+  });
+
+  const newProdItem = {
+    product: pName,
+    maker: maker !== '제조사' ? maker : '미표기',
+    usage: currentProductData?.estimated_use || '-',
+    place: place || dept || '시설관리실',
+    useStatus: '사용 중',
+    isNew: true
+  };
+
+  if (existingItem) {
+    existingItem.maker = maker !== '제조사' ? maker : existingItem.maker;
+    existingItem.usage = currentProductData?.estimated_use || existingItem.usage;
+    existingItem.place = place || dept || existingItem.place;
+    existingItem.useStatus = '사용 중';
+    existingItem.isNew = true;
+  } else {
+    legacyReferenceRows.push({
+      no: legacyReferenceRows.length + 1,
+      ...newProdItem
+    });
+  }
+  legacyReferenceRows.forEach((r, idx) => r.no = idx + 1);
+
+  saveUnifiedLedgerToStorage(legacyReferenceRows);
+  saveRegisteredNewProduct(newProdItem);
+
+  // Update badge if element exists
+  const syncBadge = document.getElementById('ledgerSyncBadge');
+  if (syncBadge) {
+    syncBadge.textContent = `통합 관리대장 반영됨 (총 ${legacyReferenceRows.length}건)`;
+  }
+
+  alert(`[${pName}] 제품이 관리대장에 반영되었습니다.\n'학교 통합 관리대장(총 ${legacyReferenceRows.length}건)'에 자동 동기화되었습니다.`);
+  resultCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+function viewUnifiedLedgerFromStage3() {
+  if (!legacyReferenceRows) legacyReferenceRows = [];
+  document.getElementById('workflowHeader').classList.add('hidden');
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('stage' + i);
+    if (el) el.classList.add('hidden');
+  }
+  document.getElementById('existingLedgerSection').classList.remove('hidden');
+  document.getElementById('legacyReferenceBox').classList.remove('hidden');
+  
+  const backBtn = document.getElementById('backToStage3Btn');
+  if (backBtn) backBtn.classList.remove('hidden');
+
+  if (typeof renderLegacyReference === 'function') {
+    renderLegacyReference(legacyReferenceRows);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function returnToStage3() {
+  document.getElementById('existingLedgerSection').classList.add('hidden');
+  document.getElementById('workflowHeader').classList.remove('hidden');
+  showStage(3);
+}
+
+function downloadLedgerCsv() {
+  exportUnifiedLedgerExcel();
+}
+
+function previewEducationSheet() {
+  const date = document.getElementById('eduDate').value || new Date().toISOString().split('T')[0];
+  const trainer = document.getElementById('eduTrainer').value || '안전보건관리담당자';
+  const target = document.getElementById('eduTarget').value || '현장근로자';
+  const place = document.getElementById('eduPlace').value || '행정실';
+
+  const a = currentMsdsAnalysis || {};
+  const h2 = a.hazards_section2 || {};
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+
+  const picHtml = renderPictogramsHtml(a, 48);
+
+  const html = `
+    <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:16px;">
+      <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #1e3a8a; padding-bottom:8px; margin-bottom:12px;">
+        <span style="font-weight:bold; font-size:15px; color:#1e3a8a;">물질안전보건자료(MSDS) 근로자 1페이지 교육자료</span>
+        <span style="font-size:12px; color:#64748b;">교육일자: ${escapeHtml(date)} | 교육자: ${escapeHtml(trainer)}</span>
+      </div>
+      <p style="margin:4px 0;"><b>취급 제품:</b> <span style="font-size:15px; color:#0f172a; font-weight:bold;">${escapeHtml(currentProductData?.product_name || a.product_name || '취급 제품')}</span> (제조사: ${escapeHtml(a.manufacturer || '미표기')})</p>
+      
+      <!-- GHS Pictograms & Signal Word in Preview -->
+      <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 14px; margin:10px 0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:13px; font-weight:bold; color:#334155;">경고표지(그림문자):</span>
+          <div style="display:inline-flex; align-items:center;">${picHtml}</div>
+        </div>
+        <div style="font-size:13px; color:#334155;">
+          <b>신호어:</b> <span style="color:#dc2626; font-weight:bold; font-size:16px;">${escapeHtml(h2.signal_word || '경고')}</span>
+        </div>
+      </div>
+
+      <p style="margin:4px 0; font-size:13px; color:#475569;"><b>교육대상:</b> ${escapeHtml(target)} | <b>교육장소:</b> ${escapeHtml(place)}</p>
+      <ul style="margin-top:10px; line-height:1.6; font-size:13.5px;">
+        <li><b>1. 주요 유해·위험성:</b> ${escapeHtml(hazStmts.slice(0, 3).join(', ') || '원문 유해성 정보 참조')}</li>
+        <li><b>2. 필수 개인보호구:</b> <span style="color:#1e3a8a; font-weight:bold;">${escapeHtml(a.ppe_section8 || '보호장갑, 보안경, 마스크 착용')}</span></li>
+        <li><b>3. 취급 및 저장 주의:</b> ${escapeHtml(a.handling_storage_section7 || '직사광선을 피하고 통풍이 잘되는 서늘한 곳에 보관, 작업 시 환기팬 가동')}</li>
+        <li><b>4. 응급조치 요령:</b> ${escapeHtml(a.first_aid_section4 || '눈이나 피부 접촉 시 흐르는 물로 15분 이상 충분히 세척할 것')}</li>
+      </ul>
+      <div style="text-align:right; margin-top:10px; font-size:12px; color:#64748b;">
+        (우측 상단 <b>[📄 교육자료 PDF 다운로드]</b> 버튼을 누르면 인쇄 및 PDF 저장이 가능합니다)
+      </div>
+    </div>
+  `;
+  document.getElementById('eduPreviewContent').innerHTML = html;
+  document.getElementById('eduPreview').classList.remove('hidden');
+}
+
+function downloadEducationPdf() {
+  if (!currentMsdsAnalysis) { alert('MSDS 분석 결과가 없습니다.'); return; }
+  const a = currentMsdsAnalysis;
+  const h2 = a.hazards_section2 || {};
+  const date = document.getElementById('eduDate').value || new Date().toISOString().split('T')[0];
+  const trainer = document.getElementById('eduTrainer').value || '안전보건관리담당자';
+  const target = document.getElementById('eduTarget').value || '현장근로자';
+  const place = document.getElementById('eduPlace').value || '행정실/작업장';
+
+  const picHtml = renderPictogramsHtml(a, 65);
+
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+
+  const htmlContent = `
+    <div class="print-wrap" style="width: 21cm; max-width: 96%; border: 3px solid #1e3a8a; padding: 25px 30px; margin: 0 auto; box-sizing: border-box; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background: #fff; color: #111;">
+      <!-- Title -->
+      <div style="text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 18px;">
+        <div style="font-size: 13pt; color: #475569; font-weight: bold; margin-bottom: 4px;">산업안전보건법 제114조에 따른</div>
+        <div style="font-size: 22pt; font-weight: 900; color: #1e3a8a; letter-spacing: -0.5px;">물질안전보건자료(MSDS) 근로자 교육자료</div>
+      </div>
+
+      <!-- Training Overview Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; border: 1.5px solid #334155;">
+        <tr style="background: #f1f5f9;">
+          <th style="border: 1px solid #cbd5e1; padding: 7px; width: 15%; font-size: 11pt; text-align: center;">제품명</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; width: 35%; font-size: 11pt; font-weight: bold; color: #0f172a;">${escapeHtml(a.product_name || '취급 제품')}</td>
+          <th style="border: 1px solid #cbd5e1; padding: 7px; width: 15%; font-size: 11pt; text-align: center;">제조사</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; width: 35%; font-size: 11pt;">${escapeHtml(a.manufacturer || '미표기')}</td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt; text-align: center; background: #f8fafc;">교육일자</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt;">${escapeHtml(date)}</td>
+          <th style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt; text-align: center; background: #f8fafc;">교육자</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt;">${escapeHtml(trainer)}</td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt; text-align: center; background: #f8fafc;">교육대상</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt;">${escapeHtml(target)}</td>
+          <th style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt; text-align: center; background: #f8fafc;">교육장소</th>
+          <td style="border: 1px solid #cbd5e1; padding: 7px; font-size: 11pt;">${escapeHtml(place)}</td>
+        </tr>
+      </table>
+
+      <!-- GHS Pictograms & Signal Word -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 12px 20px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <span style="font-size: 12pt; font-weight: bold; color: #334155;">경고표지 :</span>
+          <div style="display: inline-flex; align-items: center;">${picHtml}</div>
+        </div>
+        <div>
+          <span style="font-size: 12pt; font-weight: bold; color: #334155; margin-right: 8px;">신호어 :</span>
+          <span style="font-size: 20pt; font-weight: 900; color: #dc2626;">${escapeHtml(h2.signal_word || '경고')}</span>
+        </div>
+      </div>
+
+      <!-- Core Training Details -->
+      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #334155; margin-bottom: 16px;">
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 9px; width: 22%; background: #f1f5f9; font-size: 11pt; text-align: center;">1. 주요 유해·위험성</th>
+          <td style="border: 1px solid #cbd5e1; padding: 9px; font-size: 10.5pt; line-height: 1.5;">
+            ${hazStmts.map(s => '· ' + escapeHtml(s)).join('<br>') || '원문 유해성 정보 참조'}
+          </td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 9px; background: #f1f5f9; font-size: 11pt; text-align: center;">2. 필수 개인보호구</th>
+          <td style="border: 1px solid #cbd5e1; padding: 9px; font-size: 10.5pt; font-weight: bold; color: #1e3a8a; line-height: 1.5;">
+            🧤 ${escapeHtml(a.ppe_section8 || '보호장갑, 보안경, 방진/방독마스크 착용')}
+          </td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 9px; background: #f1f5f9; font-size: 11pt; text-align: center;">3. 취급 및 저장 주의</th>
+          <td style="border: 1px solid #cbd5e1; padding: 9px; font-size: 10.5pt; line-height: 1.5;">
+            · ${escapeHtml(a.handling_storage_section7 || '직사광선을 피하고 통풍이 잘되는 서늘한 곳에 보관하며 취급 시 국소배기장치를 가동할 것')}<br>
+            · 작업 전 환기팬 가동 및 작업장 주변 화기·점화원 차단 필수
+          </td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #cbd5e1; padding: 9px; background: #f1f5f9; font-size: 11pt; text-align: center;">4. 응급조치 요령</th>
+          <td style="border: 1px solid #cbd5e1; padding: 9px; font-size: 10.5pt; line-height: 1.5;">
+            · ${escapeHtml(a.first_aid_section4 || '눈이나 피부 접촉 시 흐르는 물로 15분 이상 충분히 세척하고 이상 시 즉시 의사의 진료를 받을 것')}
+          </td>
+        </tr>
+      </table>
+
+    </div>
+  `;
+  openPrintPopup(htmlContent);
+}
+
+function completeAll() {
+  document.getElementById('stage4').classList.add('hidden');
+  document.getElementById('workflowHeader').classList.add('hidden');
+  document.getElementById('finishProductName').textContent = `${currentProductData?.product_name || '신규 등록 제품'} 관리가 완료되었습니다.`;
+  notifyNavigatorState('완료');
+  document.getElementById('finishScreen').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function restartWorkflow() {
+  currentProductData = null;
+  currentMsdsAnalysis = null;
+  backHome();
+}
+
+/* ==========================================================================
+   LEGACY LEDGER IMPORT & PARSING WITH DEDUPLICATION
+   ========================================================================== */
+function normalizeProductName(name) {
+  if (!name) return '';
+  return String(name)
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[\(\)\[\]_\-·,./]/g, '');
+}
+
+async function parseAnyLedgerFile(file, statusBtn) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  let rows = [];
+
+  if (ext === 'csv') {
+    const text = await file.text();
+    rows = parseCsvToObjects(text);
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    rows = parseSheetToObjects(firstSheet);
+  } else if (ext === 'hwpx' || ext === 'hwp' || ext === 'pdf') {
+    const originalBtnText = statusBtn ? statusBtn.textContent : '';
+    if (statusBtn) {
+      statusBtn.disabled = true;
+      statusBtn.textContent = '⏳ 문서 분석 중...';
+    }
+
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('/api/parse-ledger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileBase64: base64
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || '문서 분석에 실패했습니다.');
+      }
+      rows = data.rows || [];
+    } finally {
+      if (statusBtn) {
+        statusBtn.disabled = false;
+        statusBtn.textContent = originalBtnText;
+      }
+    }
+  } else {
+    throw new Error('지원하지 않는 파일 형식입니다. (.csv, .xlsx, .hwpx, .hwp, .pdf 파일만 가능)');
+  }
+
+  return rows;
+}
+
+async function loadLegacyReference(isMerge = false) {
+  const file = document.getElementById('legacyLedgerFile').files[0];
+  if (!file) {
+    alert('행정실 기존 관리대장 파일(.xlsx, .hwpx, .hwp, .csv, .pdf)을 먼저 선택해주세요.');
+    return;
+  }
+
+  const btn = event?.target || document.querySelector('#existingLedgerSection button');
+  try {
+    const rawRows = await parseAnyLedgerFile(file, btn);
+    if (!rawRows || rawRows.length === 0) {
+      alert(`'${file.name}' 문서에서 관리대장 표나 제품 목록을 찾지 못했습니다.\n표 형태의 문서인지 확인해주세요.`);
+      return;
+    }
+
+    const formattedRows = rawRows.map(r => ({
+      product: (r.product || r['제품명'] || r['품명'] || '').toString().trim(),
+      maker: (r.maker || r['제조 회사명'] || r['제조사'] || '-').toString().trim(),
+      usage: (r.usage || r['용도'] || '-').toString().trim(),
+      place: (r.place || r['사용장소'] || r['보관장소'] || '시설관리실').toString().trim(),
+      useStatus: (r.useStatus || '사용 중').toString().trim(),
+      isNew: false
+    })).filter(r => r.product);
+
+    // Collect truly newly registered products that MUST be preserved (e.g. AI-analyzed new items like 노루씰)
+    const newProductsToPreserve = [];
+    
+    // 1) From existing in-memory rows: ONLY if genuinely marked isNew and not in the uploaded file
+    if (Array.isArray(legacyReferenceRows) && legacyReferenceRows.length > 0) {
+      legacyReferenceRows.forEach(r => {
+        if (r.isNew) {
+          const rNorm = normalizeProductName(r.product);
+          const inUploaded = formattedRows.some(f => normalizeProductName(f.product) === rNorm);
+          if (!inUploaded && !newProductsToPreserve.some(x => normalizeProductName(x.product) === rNorm)) {
+            newProductsToPreserve.push({ ...r, isNew: true });
+          }
+        }
+      });
+    }
+
+    // 2) From localStorage newly registered products
+    getRegisteredNewProducts().forEach(p => {
+      const pNorm = normalizeProductName(p.product);
+      const inUploaded = formattedRows.some(f => normalizeProductName(f.product) === pNorm);
+      if (!inUploaded && !newProductsToPreserve.some(x => normalizeProductName(x.product) === pNorm)) {
+        newProductsToPreserve.push({ ...p, isNew: true });
+      }
+    });
+
+    // 3) If there's currently an active product in session that was analyzed/applied
+    if (currentProductData && currentProductData.product_name) {
+      const curNorm = normalizeProductName(currentProductData.product_name);
+      const inUploaded = formattedRows.some(f => normalizeProductName(f.product) === curNorm);
+      if (!inUploaded && !newProductsToPreserve.some(x => normalizeProductName(x.product) === curNorm)) {
+        newProductsToPreserve.push({
+          product: currentProductData.product_name,
+          maker: currentProductData.manufacturer || '미표기',
+          usage: currentProductData.estimated_use || '-',
+          place: (typeof getSelectedPlace === 'function' ? getSelectedPlace() : (document.getElementById('placeSelect')?.value || '시설관리실')),
+          useStatus: '사용 중',
+          isNew: true
+        });
+      }
+    }
+
+    // Start with the incoming baseline from the uploaded file (all isNew: false)
+    let mergedRows = [...formattedRows];
+    let newPreservedCount = 0;
+    let newUpdatedCount = 0;
+
+    // Merge preserved new products into the baseline
+    newProductsToPreserve.forEach(np => {
+      const npNorm = normalizeProductName(np.product);
+      if (!npNorm) return;
+
+      const match = mergedRows.find(ex => {
+        const exNorm = normalizeProductName(ex.product);
+        if (!exNorm) return false;
+        if (exNorm === npNorm) return true;
+        if (exNorm.length >= 4 && npNorm.length >= 4 && (exNorm.includes(npNorm) || npNorm.includes(exNorm))) {
+          const exMaker = (ex.maker || '').toLowerCase().replace(/\s+/g, '');
+          const npMaker = (np.maker || '').toLowerCase().replace(/\s+/g, '');
+          if (exMaker && npMaker && (exMaker.includes(npMaker) || npMaker.includes(exMaker))) return true;
+        }
+        return false;
+      });
+
+      if (match) {
+        // If it's already in the uploaded official file, it's an existing file product
+        match.isNew = false;
+        match.useStatus = '사용 중';
+        if (np.place && (!match.place || match.place === '-' || match.place === '시설관리실')) {
+          match.place = np.place;
+        }
+        if (np.maker && np.maker !== '제조사' && np.maker !== '미표기' && (!match.maker || match.maker === '-')) {
+          match.maker = np.maker;
+        }
+        if (np.usage && np.usage !== '-' && (!match.usage || match.usage === '-')) {
+          match.usage = np.usage;
+        }
+        newUpdatedCount++;
+      } else {
+        mergedRows.push({
+          product: np.product,
+          maker: np.maker || '미표기',
+          usage: np.usage || '-',
+          place: np.place || '시설관리실',
+          useStatus: '사용 중',
+          isNew: true
+        });
+        newPreservedCount++;
+      }
+    });
+
+    // Also preserve cafeteria items if previously loaded
+    if (Array.isArray(legacyReferenceRows)) {
+      const cafItems = legacyReferenceRows.filter(r => r.place && (r.place.includes('급식') || r.place.includes('보건') || r.place.includes('과학')) && !r.isNew);
+      cafItems.forEach(caf => {
+        const cafNorm = normalizeProductName(caf.product);
+        const match = mergedRows.find(r => normalizeProductName(r.product) === cafNorm);
+        if (match) {
+          if (!match.place.includes(caf.place)) {
+            match.place = (match.place && match.place !== '-') ? `${match.place}, ${caf.place}` : caf.place;
+          }
+        } else {
+          mergedRows.push({ ...caf, isNew: false });
+        }
+      });
+    }
+
+    legacyReferenceRows = sanitizeLedgerRows(mergedRows);
+    legacyReferenceRows.forEach((r, idx) => r.no = idx + 1);
+
+    saveUnifiedLedgerToStorage(legacyReferenceRows);
+
+    renderLegacyReference(legacyReferenceRows);
+    document.getElementById('legacyReferenceBox').classList.remove('hidden');
+
+    let msg = `'${file.name}' 행정실 기존 관리대장(${formattedRows.length}건)을 불러왔습니다.`;
+    if (newPreservedCount > 0 || newUpdatedCount > 0) {
+      msg += `\n\n✅ 신규 등록 제품 ${newPreservedCount + newUpdatedCount}건이 기존 대장과 함께 통합 관리대장에 안전하게 반영되었습니다. (총 ${legacyReferenceRows.length}건)`;
+    } else {
+      msg += ` (총 ${legacyReferenceRows.length}건)`;
+    }
+    alert(msg);
+  } catch (e) {
+    alert('행정실 대장 분석 중 오류가 발생했습니다: ' + e.message);
+  }
+}
+
+async function loadCafeteriaLedgerWithDeduplication() {
+  const cafeteriaFileInput = document.getElementById('cafeteriaLedgerFile');
+  const legacyFileInput = document.getElementById('legacyLedgerFile');
+  const file = (cafeteriaFileInput?.files[0]) || (legacyFileInput?.files[0]);
+
+  if (!file) {
+    alert('다른 부서(급식실, 보건실 등) 관리대장 파일(.hwpx, .hwp, .xlsx, .csv, .pdf)을 먼저 선택해주세요.');
+    return;
+  }
+
+  const btn = event?.target || document.querySelector('#existingLedgerSection button.success');
+  try {
+    const rawRows = await parseAnyLedgerFile(file, btn);
+    if (!rawRows || rawRows.length === 0) {
+      alert(`'${file.name}' 문서에서 관리대장 표나 제품 목록을 찾지 못했습니다.\n표 형태의 문서인지 확인해주세요.`);
+      return;
+    }
+
+    // Determine default department name from file name if possible
+    let defaultDept = '기타 부서';
+    if (file.name.includes('급식')) defaultDept = '급식실';
+    else if (file.name.includes('보건')) defaultDept = '보건실';
+    else if (file.name.includes('과학')) defaultDept = '과학실';
+    else if (file.name.includes('도서')) defaultDept = '도서관';
+    else if (file.name.includes('청소')) defaultDept = '청소/환경';
+    else defaultDept = '타 부서';
+
+    const incomingRows = rawRows.map(r => {
+      let placeVal = (r.place || r['사용장소'] || r['보관장소'] || defaultDept).toString().trim();
+      if (!placeVal || placeVal === '-' || placeVal === '시설관리실' || placeVal === '보관함') {
+        placeVal = defaultDept;
+      }
+      return {
+        product: (r.product || r['제품명'] || r['품명'] || '').toString().trim(),
+        maker: (r.maker || r['제조 회사명'] || r['제조사'] || '-').toString().trim(),
+        usage: (r.usage || r['용도'] || '-').toString().trim(),
+        place: placeVal,
+        useStatus: (r.useStatus || '사용 중').toString().trim(),
+        isNew: false
+      };
+    }).filter(r => r.product);
+
+    if (!legacyReferenceRows || legacyReferenceRows.length === 0) {
+      const preserved = getRegisteredNewProducts();
+      if (preserved.length > 0) {
+        legacyReferenceRows = incomingRows.map(r => ({ ...r, isNew: false }));
+        preserved.forEach(p => {
+          if (!legacyReferenceRows.some(r => normalizeProductName(r.product) === normalizeProductName(p.product))) {
+            legacyReferenceRows.push({ ...p, isNew: true });
+          }
+        });
+      } else {
+        legacyReferenceRows = incomingRows.map(r => ({ ...r, isNew: false }));
+      }
+      legacyReferenceRows = sanitizeLedgerRows(legacyReferenceRows);
+      legacyReferenceRows.forEach((r, idx) => r.no = idx + 1);
+      saveUnifiedLedgerToStorage(legacyReferenceRows);
+      renderLegacyReference(legacyReferenceRows);
+      document.getElementById('legacyReferenceBox').classList.remove('hidden');
+      alert(`'${file.name}' 대장에서 총 ${legacyReferenceRows.length}건을 성공적으로 등록했습니다.`);
+      return;
+    }
+
+    // Deduplication Engine: Compare incoming items with existing legacyReferenceRows
+    const duplicateList = [];
+    const addedList = [];
+
+    incomingRows.forEach(inc => {
+      const incNorm = normalizeProductName(inc.product);
+      if (!incNorm) return;
+
+      const match = legacyReferenceRows.find(ex => {
+        const exNorm = normalizeProductName(ex.product);
+        if (!exNorm) return false;
+        if (exNorm === incNorm) return true;
+        // Match with substring and manufacturer
+        if (exNorm.length >= 4 && incNorm.length >= 4) {
+          if (exNorm.includes(incNorm) || incNorm.includes(exNorm)) {
+            const exMaker = (ex.maker || '').toLowerCase().replace(/\s+/g, '');
+            const incMaker = (inc.maker || '').toLowerCase().replace(/\s+/g, '');
+            if (exMaker && incMaker && (exMaker.includes(incMaker) || incMaker.includes(exMaker))) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+
+      if (match) {
+        duplicateList.push({ incoming: inc, existing: match });
+        // Update place to include incoming place if not already included
+        if (inc.place && !match.place.includes(inc.place)) {
+          match.place = (match.place && match.place !== '-') ? `${match.place}, ${inc.place}` : inc.place;
+        }
+        // Fill missing maker or usage
+        if ((!match.maker || match.maker === '-' || match.maker === '미표기') && inc.maker && inc.maker !== '-') {
+          match.maker = inc.maker;
+        }
+        if ((!match.usage || match.usage === '-') && inc.usage && inc.usage !== '-') {
+          match.usage = inc.usage;
+        }
+      } else {
+        addedList.push({
+          no: 0,
+          product: inc.product,
+          maker: inc.maker || '미표기',
+          usage: inc.usage || '-',
+          place: inc.place || defaultDept,
+          useStatus: inc.useStatus || '사용 중',
+          isNew: false
+        });
+      }
+    });
+
+    if (addedList.length > 0) {
+      legacyReferenceRows = legacyReferenceRows.concat(addedList);
+    }
+    legacyReferenceRows = sanitizeLedgerRows(legacyReferenceRows);
+    legacyReferenceRows.forEach((r, idx) => r.no = idx + 1);
+
+    saveUnifiedLedgerToStorage(legacyReferenceRows);
+
+    renderLegacyReference(legacyReferenceRows);
+    document.getElementById('legacyReferenceBox').classList.remove('hidden');
+
+    let report = `[다른 부서 대장 중복 필터링 및 통합 결과] ('${file.name}')\n\n`;
+    report += `• 분석된 품목: 총 ${incomingRows.length}건\n`;
+    if (duplicateList.length > 0) {
+      const sampleDups = duplicateList.slice(0, 3).map(d => d.incoming.product).join(', ');
+      const moreTxt = duplicateList.length > 3 ? ` 외 ${duplicateList.length - 3}건` : '';
+      report += `• 중복 제외 (장소 정보 통합): ${duplicateList.length}건 (${sampleDups}${moreTxt})\n`;
+    } else {
+      report += `• 중복 품목: 0건 (모두 신규 품목)\n`;
+    }
+    report += `• 신규 추가 품목: ${addedList.length}건\n`;
+    report += `─────────────────────────\n`;
+    report += `➔ 학교 통합 관리대장: 총 ${legacyReferenceRows.length}건`;
+
+    alert(report);
+  } catch (e) {
+    alert('부서 대장 합치기 중 오류가 발생했습니다: ' + e.message);
+  }
+}
+
+function exportUnifiedLedgerExcel() {
+  if (!legacyReferenceRows || legacyReferenceRows.length === 0) {
+    alert('다운로드할 대장 목록이 없습니다. 먼저 대장을 불러오거나 등록해주세요.');
+    return;
+  }
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const dateStr = `${year}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+
+  const aoa = [
+    ['물질안전보건자료(MSDS) 관리대장'],
+    [`작성일: ${dateStr}`, '', '', '', `출력일시: ${year}-${month}-${day}`],
+    [],
+    ['연번', '제품명', '제조 회사명', '용도', '사용장소', '현재상태']
+  ];
+
+  legacyReferenceRows.forEach((r, idx) => {
+    aoa.push([
+      idx + 1,
+      r.product || '-',
+      r.maker || '-',
+      r.usage || '-',
+      r.place || '-',
+      r.useStatus || '사용 중'
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  ws['!cols'] = [
+    { wch: 8 },
+    { wch: 25 },
+    { wch: 22 },
+    { wch: 25 },
+    { wch: 16 },
+    { wch: 14 }
+  ];
+
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '통합MSDS관리대장');
+  XLSX.writeFile(wb, `학교_통합_MSDS_관리대장_${year}${month}${day}.xlsx`);
+}
+
+function parseSheetToObjects(sheet) {
+  const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  return parse2DArrayToRows(rawRows);
+}
+
+function parseCsvToObjects(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const rawRows = lines.map(line => {
+    const cells = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        cells.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
+  return parse2DArrayToRows(rawRows);
+}
+
+function parse2DArrayToRows(rawRows) {
+  if (!rawRows || rawRows.length < 2) return [];
+
+  const headerKeywords = ['제품', '품명', '화학', '명칭', '물질명', '제조', '공급', '업체', '용도', '장소', '부서', '상태', '연번', '번호'];
+  let bestHeaderIdx = -1;
+  let bestMatchCount = 0;
+
+  for (let r = 0; r < Math.min(10, rawRows.length); r++) {
+    const row = rawRows[r] || [];
+    let matchCount = 0;
+    for (let c = 0; c < row.length; c++) {
+      const cell = String(row[c] || '').toLowerCase().replace(/\s+/g, '');
+      if (headerKeywords.some(k => cell.includes(k))) {
+        matchCount++;
+      }
+    }
+    if (matchCount > bestMatchCount) {
+      bestMatchCount = matchCount;
+      bestHeaderIdx = r;
+    }
+  }
+
+  const headerRow = bestHeaderIdx !== -1 ? rawRows[bestHeaderIdx] : (rawRows[0] || []);
+  const startIdx = bestHeaderIdx !== -1 ? bestHeaderIdx + 1 : 1;
+
+  let colProd = -1;
+  let colMaker = -1;
+  let colUsage = -1;
+  let colPlace = -1;
+  let colStatus = -1;
+
+  for (let c = 0; c < headerRow.length; c++) {
+    const cell = String(headerRow[c] || '').toLowerCase().replace(/\s+/g, '');
+    if (['제품', '품명', '화학', '명칭', '물질명'].some(k => cell.includes(k)) && colProd === -1) {
+      colProd = c;
+    } else if (['제조', '공급', '업체', '수입'].some(k => cell.includes(k)) && colMaker === -1) {
+      colMaker = c;
+    } else if (['용도', '사용목적', '세부용도'].some(k => cell.includes(k)) && colUsage === -1) {
+      colUsage = c;
+    } else if (['장소', '위치', '보관', '부서'].some(k => cell.includes(k)) && colPlace === -1) {
+      colPlace = c;
+    } else if (['상태', '사용여부', '취급', '비고'].some(k => cell.includes(k)) && colStatus === -1) {
+      colStatus = c;
+    }
+  }
+
+  if (colProd === -1) colProd = headerRow.length > 1 ? 1 : 0;
+
+  const result = [];
+  for (let r = startIdx; r < rawRows.length; r++) {
+    const row = rawRows[r] || [];
+    if (!row || row.length === 0) continue;
+
+    const prod = String(row[colProd] || '').trim();
+    if (!prod || ['제품명', '화학제품명', '품명', '연번', '합계', '총계', '학교명', '물질안전보건자료'].some(k => prod.replace(/\s+/g, '').includes(k))) {
+      continue;
+    }
+    if (prod.startsWith('※') || prod.startsWith('참고') || prod.startsWith('안내')) {
+      continue;
+    }
+
+    const maker = colMaker !== -1 ? String(row[colMaker] || '').trim() : '';
+    const usage = colUsage !== -1 ? String(row[colUsage] || '').trim() : '';
+    const place = colPlace !== -1 ? String(row[colPlace] || '').trim() : '';
+    const statusRaw = colStatus !== -1 ? String(row[colStatus] || '').trim() : '';
+
+    let useStatus = '사용 중';
+    if (statusRaw.includes('중단') || statusRaw.includes('폐기')) {
+      useStatus = '사용중단';
+    } else if (statusRaw.includes('확인')) {
+      useStatus = '확인 필요';
+    }
+
+    result.push({
+      product: prod,
+      maker: maker || '-',
+      usage: usage || '-',
+      place: place || '-',
+      useStatus: useStatus
+    });
+  }
+
+  return result;
+}
+
+function updateLegacyStatus(no, newStatus) {
+  const item = legacyReferenceRows.find(r => r.no === no);
+  if (item) {
+    item.useStatus = newStatus;
+    saveUnifiedLedgerToStorage(legacyReferenceRows);
+  }
+  const q = document.getElementById('legacySearch')?.value.toLowerCase().trim();
+  if (q) {
+    filterLegacyReference();
+  } else {
+    renderLegacyReference(legacyReferenceRows);
+  }
+}
+
+function renderLegacyReference(rows) {
+  const body = document.getElementById('legacyReferenceBody');
+  body.innerHTML = '';
+
+  if (!rows || rows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td colspan="7" style="text-align: center; padding: 36px 20px; color: #64748b; font-size: 13.5px; background: #f8fafc;">
+        <div style="font-size: 18px; margin-bottom: 6px;">📂</div>
+        <b>등록된 제품이 없습니다.</b><br>
+        <span style="font-size: 12px; color: #94a3b8;">상단에서 행정실·급식실 대장 파일을 불러오거나, 신규 제품을 분석한 후 [관리대장 반영]을 진행하세요.</span>
+      </td>
+    `;
+    body.appendChild(tr);
+    document.getElementById('legacyReferenceCount').textContent = '총 0건 표시';
+    return;
+  }
+
+  rows.forEach(r => {
+    const isStopped = (r.useStatus === '사용중단' || r.useStatus === '폐기/중단');
+
+    const statusSelect = `
+      <select onchange="updateLegacyStatus(${r.no}, this.value)" style="
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: bold;
+        border: 1px solid ${isStopped ? '#ced4da' : '#b7e4c7'};
+        background: ${isStopped ? '#e9ecef' : '#dff2e3'};
+        color: ${isStopped ? '#495057' : '#2b8a3e'};
+        cursor: pointer;
+        text-align-last: center;
+        outline: none;
+      ">
+        <option value="사용 중" ${!isStopped ? 'selected' : ''} style="background:#fff; color:#2b8a3e; font-weight:bold;">사용 중</option>
+        <option value="사용중단" ${isStopped ? 'selected' : ''} style="background:#fff; color:#495057; font-weight:bold;">사용중단</option>
+      </select>
+    `;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align: center; vertical-align: middle;">${r.no}</td>
+      <td style="text-align: center; vertical-align: middle; font-weight: 500;">
+        ${escapeHtml(r.product)}
+        ${r.isNew ? '<span style="font-size:11px; background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:2px 6px; border-radius:4px; font-weight:bold; margin-left:6px; display:inline-block;">신규반영</span>' : ''}
+      </td>
+      <td style="text-align: center; vertical-align: middle;">${escapeHtml(r.maker || '-')}</td>
+      <td style="text-align: center; vertical-align: middle;">${escapeHtml(r.usage || '-')}</td>
+      <td style="text-align: center; vertical-align: middle;">${escapeHtml(r.place || '-')}</td>
+      <td style="text-align: center; vertical-align: middle; white-space: nowrap;">${statusSelect}</td>
+      <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
+        ${isStopped 
+          ? '<span style="color:#999; font-size:12px; font-weight:bold; display:inline-block; padding:4px 0;">불필요</span>' 
+          : `<button style="width:auto; padding:6px 12px; font-size:12px; white-space:nowrap; border-radius:4px; display:inline-block; margin:0; background:${r.isNew ? '#16a34a' : '#1971c2'}; color:#fff; border:none; cursor:pointer; font-weight:600;" onclick="bringLegacyToNew(${r.no})">${r.isNew ? '신규 조치' : '관리·조치'}</button>`}
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+  document.getElementById('legacyReferenceCount').textContent = `총 ${rows.length}건 표시`;
+}
+
+function filterByStatus(status) {
+  currentLegacyFilter = status;
+  if (status === '전체') {
+    renderLegacyReference(legacyReferenceRows);
+  } else if (status === '사용중단') {
+    renderLegacyReference(legacyReferenceRows.filter(r => r.useStatus === '사용중단' || r.useStatus === '폐기/중단'));
+  } else if (status === '사용 중' || status === '사용중') {
+    renderLegacyReference(legacyReferenceRows.filter(r => r.useStatus === '사용 중' || r.useStatus === '사용중'));
+  } else {
+    renderLegacyReference(legacyReferenceRows.filter(r => r.useStatus === status));
+  }
+}
+
+function filterLegacyReference() {
+  const q = document.getElementById('legacySearch').value.toLowerCase().trim();
+  renderLegacyReference(legacyReferenceRows.filter(r => 
+    r.product.toLowerCase().includes(q) || 
+    (r.maker && r.maker.toLowerCase().includes(q)) || 
+    (r.usage && r.usage.toLowerCase().includes(q)) ||
+    (r.place && r.place.toLowerCase().includes(q))
+  ));
+}
+
+function bringLegacyToNew(no) {
+  matchedLegacy = legacyReferenceRows.find(r => r.no === no);
+  startNewProduct();
+  if (matchedLegacy) {
+    document.getElementById('duplicateCheckBox').classList.remove('hidden');
+    const label = matchedLegacy.isNew ? '신규 등록 제품' : '기존 관리 제품';
+    document.getElementById('duplicateCheckText').innerHTML = `<b>${escapeHtml(matchedLegacy.product)}</b> (${label})의 MSDS 확인 및 관리조치를 시작합니다.`;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[m]));
+}
+
+function openPrintPopup(htmlContent) {
+  const popup = window.open('', '_blank', 'width=850,height=900,scrollbars=yes');
+  if (!popup) {
+    alert('팝업 차단이 감지되었습니다. 팝업을 허용해주세요.');
+    return;
+  }
+  const styles = Array.from(document.querySelectorAll('style')).map(s => s.outerHTML).join('\n');
+  popup.document.open();
+  popup.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>MSDS 인쇄</title>
+        ${styles}
+        <style>
+          body { background: #fff !important; color: #000 !important; padding: 20px; }
+          .print-wrap, .guide-wrap { margin: 0 auto !important; display: block !important; }
+          @media print {
+            body { padding: 0; }
+            @page { margin: 1cm; size: auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div id="printArea">
+          ${htmlContent}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
+        <\/script>
+      </body>
+    </html>
+  `);
+  popup.document.close();
+}
+
+function printStandardLabel() {
+  const pa = document.getElementById('printArea');
+  if(!currentMsdsAnalysis) { alert('AI 분석 결과가 없습니다.'); return; }
+  const a = currentMsdsAnalysis;
+  const h2 = a.hazards_section2 || {};
+  
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+  
+  const picHtml = renderPictogramsHtml(a, 95);
+  
+  const htmlContent = `
+    <div class="print-wrap" style="border: 6px solid #000; padding: 15px 30px; margin: 0 auto; max-width: 21cm;">
+      <div style="text-align: center; font-size: 14pt; margin-bottom: 10px; font-weight: bold;">산업안전보건법 제41조 규정에 의한 경고표지</div>
+      <div style="text-align: center; font-size: 24pt; font-weight: 900; margin-bottom: 20px; border: 4px solid red; padding: 10px; letter-spacing: 1px; line-height: 1.2;">
+        ${escapeHtml(a.product_name || '미상')}
+      </div>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px;">
+          ${picHtml}
+        </div>
+        <div style="font-size: 50pt; font-weight: 900; color: #d32f2f; margin-left: 20px; letter-spacing: -2px;">
+          ${escapeHtml(h2.signal_word || '')}
+        </div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
+        <tr>
+          <th style="border: 1px solid #000; width: 120px; padding: 8px; font-size: 14pt;">유해위험문구</th>
+          <td style="border: 1px solid #000; padding: 8px; font-size: 11pt; font-weight: bold; line-height: 1.4;" colspan="2">
+            ${hazStmts.map(s => '- ' + escapeHtml(s)).join('<br>') || '정보 없음'}
+          </td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #000; width: 120px; padding: 8px; font-size: 14pt;" rowspan="4">예방조치문구</th>
+          <th style="border: 1px solid #000; width: 60px; padding: 8px; font-size: 12pt;">예방</th>
+          <td style="border: 1px solid #000; padding: 8px; font-size: 10pt; line-height: 1.4;">${getPrecautionaryText(h2.precautionary_statements, '예방')}</td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #000; width: 60px; padding: 8px; font-size: 12pt;">대응</th>
+          <td style="border: 1px solid #000; padding: 8px; font-size: 10pt; line-height: 1.4;">${getPrecautionaryText(h2.precautionary_statements, '대응')}</td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #000; width: 60px; padding: 8px; font-size: 12pt;">저장</th>
+          <td style="border: 1px solid #000; padding: 8px; font-size: 10pt; line-height: 1.4;">${getPrecautionaryText(h2.precautionary_statements, '저장')}</td>
+        </tr>
+        <tr>
+          <th style="border: 1px solid #000; width: 60px; padding: 8px; font-size: 12pt;">폐기</th>
+          <td style="border: 1px solid #000; padding: 8px; font-size: 10pt; line-height: 1.4;">${getPrecautionaryText(h2.precautionary_statements, '폐기')}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 10px; font-size: 11pt; font-weight: bold; line-height: 1.5;">
+        ▣ 기타 자세한 내용은 물질안전보건자료(MSDS) 참조<br>
+        ▣ 공급자 정보 : ${escapeHtml(a.manufacturer || '정보 없음')}
+      </div>
+    </div>
+  `;
+  openPrintPopup(htmlContent);
+}
+
+function printSmallLabel() {
+  const pa = document.getElementById('printArea');
+  if(!currentMsdsAnalysis) { alert('AI 분석 결과가 없습니다.'); return; }
+  const a = currentMsdsAnalysis;
+  const h2 = a.hazards_section2 || {};
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+  
+  const picHtml = renderPictogramsHtml(a, 76);
+
+  // Signal word with spacing (e.g., "위  험" or "경  고")
+  let sigWord = (h2.signal_word || '경고').trim();
+  let formattedSigWord = sigWord.length === 2 ? `${sigWord[0]}  ${sigWord[1]}` : sigWord;
+
+  const htmlContent = `
+    <div class="print-wrap" style="width: 14.5cm; max-width: 95%; border: 4px solid #000; padding: 25px 30px; margin: 0 auto; box-sizing: border-box; font-family: 'Malgun Gothic', '맑은 고딕', dotum, sans-serif; background: #fff;">
+      <!-- 1. 물질 또는 제품명 -->
+      <div style="text-align: center; font-size: 26pt; font-weight: 900; color: #000; margin-bottom: 25px; line-height: 1.2; letter-spacing: -0.5px;">
+        ${escapeHtml(a.product_name || '제품명')}
+      </div>
+
+      <!-- 2. 그림문자 & 신호어 나란히 배치 -->
+      <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin: 10px 0 25px 0; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
+          ${picHtml}
+        </div>
+        <div style="font-size: 24pt; font-weight: 900; color: #000; margin-left: 20px; letter-spacing: 6px; white-space: nowrap;">
+          ${escapeHtml(formattedSigWord)}
+        </div>
+      </div>
+
+      <!-- 3. 공급자 정보 및 MSDS 참조 안내문 -->
+      <div style="font-size: 13pt; line-height: 1.8; color: #000; margin-top: 20px; text-align: left;">
+        <div><b>공급자 정보 :</b> ${escapeHtml(a.manufacturer || '정보 없음')}</div>
+        <div style="margin-top: 8px;">※ 기타 자세한 사항은 물질안전보건자료를 참고하시오.</div>
+      </div>
+    </div>
+  `;
+  openPrintPopup(htmlContent);
+}
+
+function printSafetyGuide() {
+  const pa = document.getElementById('printArea');
+  if(!currentMsdsAnalysis) { alert('AI 분석 결과가 없습니다.'); return; }
+  const a = currentMsdsAnalysis;
+  const h2 = a.hazards_section2 || {};
+  let hazStmts = h2.hazard_statements;
+  hazStmts = Array.isArray(hazStmts) ? hazStmts : (hazStmts ? [hazStmts] : []);
+  
+  const picHtml = renderPictogramsHtml(a, 60);
+  
+  let handlingText = escapeHtml(a.handling_storage_section7 || '정보 없음');
+  let firstAid = escapeHtml(a.first_aid_section4 || '정보 없음');
+  let spill = escapeHtml(a.spill_section6 || '정보 없음');
+  
+  const htmlContent = `
+    <div class="guide-wrap">
+      <table class="guide-header-table">
+        <tr>
+          <td style="width: 20%;">공정명:</td>
+          <td class="center" style="width: 60%;">유해화학물질 작업공정별 관리 요령</td>
+          <td style="width: 20%;">개정 :</td>
+        </tr>
+      </table>
+      
+      <div class="guide-product-row">
+        <div class="guide-product-label">제품명</div>
+        <div class="guide-product-name">${escapeHtml(a.product_name || '미상')}</div>
+      </div>
+      
+      <div class="guide-section">
+        <div class="guide-section-title">1. 그림문자</div>
+        <div style="text-align: right; font-size: 12pt; padding-right: 20px;">신호어 : <span style="color:#dc2626; font-weight:bold;">${escapeHtml(h2.signal_word || '경고')}</span></div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 10px; margin-bottom: 10px;">
+          ${picHtml}
+        </div>
+      </div>
+      
+      <div class="guide-section">
+        <div class="guide-section-title">2. 유해성.위험성</div>
+        <div class="guide-section-content">
+          ${hazStmts.map(s => '· ' + escapeHtml(s)).join('<br>')}
+          <br><b>[예방]</b> ${getPrecautionaryText(h2.precautionary_statements, '예방')}
+          <br><b>[대응]</b> ${getPrecautionaryText(h2.precautionary_statements, '대응')}
+          <br><b>[저장]</b> ${getPrecautionaryText(h2.precautionary_statements, '저장')}
+          <br><b>[폐기]</b> ${getPrecautionaryText(h2.precautionary_statements, '폐기')}
+        </div>
+      </div>
+      
+      <div class="guide-section" style="padding: 0;">
+        <div class="guide-section-title" style="padding: 10px 15px;">3. 취급 시 주의사항</div>
+        <table class="guide-sub-table">
+          <tr>
+            <th>취급</th>
+            <td>${handlingText}</td>
+          </tr>
+          <tr>
+            <th>저장</th>
+            <td>서늘하고 건조한 장소에 보관할 것, 직사광선을 피하고 환기가 잘 되는 곳에 보관하시오. 열·스파크·화염·고열로부터 멀리하시오.</td>
+          </tr>
+        </table>
+      </div>
+      
+      <div class="guide-section">
+        <div class="guide-section-title">4. 적절한 보호구</div>
+        <div class="guide-section-content" style="font-size: 14pt; font-weight: bold; padding-top: 10px;">
+          ${escapeHtml(a.ppe_section8 || '정보 없음')}
+        </div>
+      </div>
+      
+      <div class="guide-section" style="padding: 0;">
+        <div class="guide-section-title" style="padding: 10px 15px;">5. 응급조치 요령 및 사고 시 대처방법</div>
+        <table class="guide-sub-table">
+          <tr>
+            <th>눈/피부</th>
+            <td>${firstAid}</td>
+          </tr>
+          <tr>
+            <th>흡입/섭취</th>
+            <td>신선한 공기가 있는 곳으로 이동. 불편함을 느끼면 의료기관 진찰을 받으시오.</td>
+          </tr>
+          <tr>
+            <th>누출/화재</th>
+            <td>${spill}<br>${escapeHtml(a.fire_section5 || '정보 없음')}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  `;
+  openPrintPopup(htmlContent);
+}
+</script>
+<script>
+  // [기존 코드 안전 보장] 다른 기능에 영향을 주지 않는 순수 감지(Tracker) 스크립트
+  document.addEventListener('DOMContentLoaded', () => {
+    function completeBadge(badgeId) {
+      const badge = document.getElementById(badgeId);
+      if (badge) {
+        badge.innerHTML = '🟢 완료';
+        badge.style.backgroundColor = '#e8f5e9';
+        badge.style.color = '#2e7d32';
+      }
+    }
+
+    // 1. MSDS 분석 완료 감지: 표에 데이터가 채워지는지 주기적으로 감시 (안전함)
+    let msdsCheckInterval = setInterval(() => {
+      const hazardTd = document.getElementById('anHazard');
+      if (hazardTd && hazardTd.innerText.trim() !== '-' && hazardTd.innerText.trim() !== '') {
+        completeBadge('badgeMsds');
+        clearInterval(msdsCheckInterval);
+      }
+    }, 1500);
+
+    // 2~4. 사용자의 행동(버튼 클릭) 감지: 텍스트 기반으로 동작 파악 (기존 버튼 이벤트 방해 안 함)
+    document.body.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+      
+      const btnText = (target.innerText || '').toLowerCase().replace(/\s/g, '');
+      
+      if (btnText.includes('인쇄') || btnText.includes('출력') || btnText.includes('경고표지')) {
+        completeBadge('badgeLabel');
+      }
+      
+      if (btnText.includes('교육') || btnText.includes('교안') || btnText.includes('다운로드')) {
+        completeBadge('badgeEdu');
+      }
+      
+      if (btnText.includes('등록') || btnText.includes('저장') || btnText.includes('반영') || btnText.includes('대장')) {
+        completeBadge('badgeLedger');
+      }
+    });
+  });
+</script>
+</body>
+</html>

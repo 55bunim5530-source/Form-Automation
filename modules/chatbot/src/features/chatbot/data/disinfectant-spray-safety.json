@@ -1,0 +1,26 @@
+{
+  "sourceTitle": "소독제 안전사용 자료",
+  "sourcePublisher": "한국산업안전보건공단",
+  "sourceDate": "",
+  "sourceUrl": "https://www.kosha.or.kr/ebook/fcatalog/access/ecatalogt.jsp?Dir=493&callmode=normal&catimage=&eclang=ko&start=10&um=s",
+  "extraction": "Official KOSHA web e-catalog; manually curated semantic chunk",
+  "deduplication": "Existing school chemical-safety guidance states the prohibition. This chunk retains only the official explanation for avoiding airborne spray and the safer surface-wiping method.",
+  "pages": [
+    {
+      "pdfPage": 10,
+      "referenceLabel": "한국산업안전보건공단 전자카탈로그 10쪽",
+      "category": "msds",
+      "sourceKind": "web",
+      "searchTerms": [
+        "락스 분무 금지",
+        "소독제 분사 흡입",
+        "공기 중 분무",
+        "표면 소독",
+        "환기"
+      ],
+      "section": "소독제 분무·분사 금지와 표면소독",
+      "text": "소독제는 피부·눈·호흡기에 자극을 줄 수 있으므로 공기 중에 분무하거나 분사하는 등 인체 노출 위험이 높은 방식은 권장하지 않는다. 손잡이·전화기·책상·의자와 바닥처럼 접촉이 잦은 물체 표면은 소독제를 묻힌 천으로 닦고, 소독 전·중·후에 충분히 환기한다. 락스 등 염소계 소독제를 산성 세정제나 다른 합성세제와 섞으면 유해가스가 발생할 수 있다."
+    }
+  ],
+  "chunkCount": 1
+}

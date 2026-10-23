@@ -1,0 +1,90 @@
+<!doctype html>
+
+<html lang="ko">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>학교 산업안전보건 통합 업무지원 시스템</title>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="integration.css?v=3">
+
+</head>
+
+<body>
+
+<header class="global-header">
+
+  <div class="global-brand">
+
+    <div class="global-logo"><span>산업안전 <em>안심</em>봇(BOT)</span><span class="robot-mark" aria-hidden="true">🤖</span></div>
+
+    <div class="global-subtitle">학교 산업안전보건 통합 업무지원</div>
+
+  </div>
+
+  <div class="global-tools">
+
+    <button class="school-select" type="button">○○학교⌄</button>
+
+    <span class="save-state"><span class="status-dot"></span><span id="saveStatus">브라우저에 저장됨</span></span>
+
+    <span class="notification" aria-label="알림 3건">🔔<i>3</i></span>
+
+    <span class="global-user"><span class="avatar">👤</span><span>김안전 선생님⌄</span></span>
+
+  </div>
+
+</header>
+
+<div class="app">
+
+  <aside class="sidebar">
+
+    <div class="brand"><div class="brand-mark">안전</div><h1>산업안전보건<br>일정·업무 내비게이터</h1><p>해야 할 업무를 놓치지 않도록,<br>일정부터 완료까지 안내합니다.</p></div>
+
+    <nav class="nav" id="nav"></nav>
+
+    <div class="sample-note">5개 프로그램 통합본<br>데이터는 모듈별 보존</div>
+
+  </aside>
+
+  <main class="main">
+
+    <section class="content" id="view"></section>
+
+  </main>
+
+</div>
+
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;pointer-events:none"><defs><filter id="nav-icon-ink" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1 1 1 0 -1.8"/></filter></defs></svg>
+<div id="overlay"></div><div id="toast"></div>
+
+
+
+
+<script>window.safetyWorkflowBoot=new Promise(resolve=>{window.safetyWorkflowBootResolve=resolve;});</script>
+<script src="app.js" defer></script>
+<script src="/modules/facility/assets.js" defer></script>
+<script src="/modules/facility/module.js" defer></script>
+<script src="integration.js?v=3" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>
+

@@ -1,28 +1,25 @@
-# Logs
-logs
+# Runtime state
+runtime/logs/*
+runtime/pids/*
+!runtime/logs/.gitkeep
+!runtime/pids/.gitkeep
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Local secrets and machine-specific settings
+.env
+.env.*
+!.env.example
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Development dependencies and caches
+modules/forms/node_modules/
+modules/chatbot/node_modules/
+modules/chatbot/.next/cache/
 
-# Environment variables
-.env
-.env.production
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+

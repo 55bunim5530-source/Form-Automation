@@ -1,11 +1,12 @@
 @echo off
-chcp 65001 > nul
-echo ======================================================
-echo    산업안전보건 서식 자동화 시스템을 시작합니다...
-echo ======================================================
-echo.
-
-start http://localhost:5173/
-npm.cmd run dev
-
+chcp 65001 >nul
+cd /d "%~dp0"
+where node >nul 2>nul
+if not errorlevel 1 goto node_ready
+echo [ERROR] Node.js 20.9 or newer is required.
+echo Install Node.js and run this file again.
 pause
+exit /b 1
+:node_ready
+node launcher\start.mjs
+if errorlevel 1 pause

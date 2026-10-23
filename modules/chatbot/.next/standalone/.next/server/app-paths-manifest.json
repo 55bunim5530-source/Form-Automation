@@ -1,0 +1,7 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/chatbot/ask/route": "app/api/chatbot/ask/route.js",
+  "/chatbot/page": "app/chatbot/page.js",
+  "/page": "app/page.js"
+}

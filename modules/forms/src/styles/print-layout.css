@@ -1,0 +1,7 @@
+/* 화면 디자인과 별도로 A4 인쇄 여백 보정을 유지합니다. */
+@media print {
+  .main-workspace { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .form-render-container { display: block !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; overflow: visible !important; }
+  .doc-meta-and-approval .approval-table { width: 170px !important; flex: 0 0 170px; }
+  .doc-meta-and-approval .meta-info-table { width: auto !important; flex: 1; }
+}

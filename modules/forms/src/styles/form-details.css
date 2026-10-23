@@ -1,0 +1,242 @@
+/* Structural classes used by the original forms but absent from the base CSS.
+   Keep these scoped to the form sheets; existing official-table rules remain. */
+.official-document .table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.official-document .doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #8c9b97;
+  table-layout: fixed;
+  color: #243b3e;
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+.official-document .doc-table th,
+.official-document .doc-table td {
+  border: 1px solid #bdc8c4;
+  padding: 6px 7px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.official-document .doc-table th {
+  background: #f0f4f0;
+  color: #34534c;
+  font-weight: 650;
+  text-align: center;
+}
+
+.official-document .doc-table thead tr + tr th {
+  background: #f7f9f5;
+}
+
+.official-document .doc-table tbody tr:hover > td {
+  background-color: #fcfdfb;
+}
+
+.official-document .doc-table .table-input {
+  min-width: 0;
+  max-width: 100%;
+  font-size: inherit;
+}
+
+.official-document .doc-table .table-textarea {
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.6;
+}
+
+.official-document .info-bar-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px 16px;
+  background: #f5f7f3;
+  border: 1px solid #dce3da;
+  border-radius: 6px;
+}
+
+.official-document .info-bar-item {
+  display: flex;
+  align-items: center;
+  flex: 1 1 230px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.official-document .info-bar-label {
+  flex-shrink: 0;
+  color: #52695d;
+  font-size: .78rem;
+  line-height: 1.6;
+}
+
+.official-document .info-bar-item .form-input {
+  flex: 1;
+  min-width: 70px;
+  width: auto;
+  padding: 6px 8px;
+  background: #fff;
+}
+
+.official-document .btn-row-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #88998b;
+  cursor: pointer;
+}
+
+.official-document .btn-row-del:hover {
+  color: #a4534b;
+  background: #fbefec;
+}
+
+.official-document .btn-row-del:focus-visible {
+  outline: 2px solid #27695d;
+  outline-offset: 2px;
+}
+
+.official-document .sign-preview.micro img { max-height: 30px; }
+.official-document .btn-sign-trigger.micro { padding: 3px 5px; font-size: 10px; }
+.official-document .approval-box { flex-shrink: 0; width: 180px; margin-left: auto; }
+.official-document .approval-box .approval-table th,
+.official-document .approval-box .sign-cell { border: 1px solid #a7b5ac; text-align: center; }
+.official-document .approval-box .approval-table th { padding: 5px; background: #f3f6f1; }
+.official-document .sign-cell { height: 62px; padding: 5px; vertical-align: middle; cursor: pointer; }
+.official-document .sign-placeholder { color: #7a8f80; font-size: 12px; }
+.official-document .radio-label { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 26px; cursor: pointer; }
+.official-document .radio-label input { accent-color: #27695d; }
+.official-document .pledge-label { min-width: 125px; font-size: .85rem; flex-shrink: 0; }
+.official-document .chem-list-wrap { display: flex; flex-direction: column; gap: 5px; }
+.official-document .no-break { break-inside: avoid; page-break-inside: avoid; }
+
+/* Small layout utilities already referenced in the form JSX. */
+.official-document .flex-1 { flex: 1 1 0%; min-width: 0; }
+.official-document .flex-wrap { flex-wrap: wrap; }
+.official-document .flex-col { flex-direction: column; }
+.official-document .items-start { align-items: flex-start; }
+.official-document .justify-center { justify-content: center; }
+.official-document .justify-end { justify-content: flex-end; }
+.official-document .inline-block { display: inline-block; }
+.official-document .relative { position: relative; }
+.official-document .overflow-hidden { overflow: hidden; }
+.official-document .font-normal { font-weight: 400; }
+.official-document .font-medium { font-weight: 500; }
+.official-document .text-right { text-align: right; }
+.official-document .leading-relaxed { line-height: 1.7; }
+.official-document .leading-snug { line-height: 1.4; }
+.official-document .text-base { font-size: 1rem; }
+.official-document .text-xl { font-size: 1.25rem; }
+.official-document .bg-white { background-color: #fff; }
+.official-document .bg-slate-50 { background-color: #f7f9f5; }
+.official-document .bg-slate-100 { background-color: #f0f4ef; }
+.official-document .bg-slate-200 { background-color: #e7eee5; }
+.official-document .text-slate-400 { color: #87958c; }
+.official-document .text-slate-700 { color: #465f53; }
+.official-document .text-slate-800 { color: #314b40; }
+.official-document .text-slate-900 { color: #233b31; }
+.official-document .text-rose-600 { color: #ad534c; }
+.official-document .text-emerald-600 { color: #27695d; }
+.official-document .text-blue-600 { color: #396974; }
+.official-document .border { border: 1px solid #bdc8c0; }
+.official-document .border-2 { border: 2px solid #869c8e; }
+.official-document .border-b { border-bottom: 1px solid #bdc8c0; }
+.official-document .border-b-2 { border-bottom: 2px solid #869c8e; }
+.official-document .border-t { border-top: 1px solid #bdc8c0; }
+.official-document .border-t-2 { border-top: 2px solid #869c8e; }
+.official-document .border-t-0 { border-top: 0; }
+.official-document .border-l-2 { border-left: 2px solid #869c8e; }
+.official-document .border-dashed { border-style: dashed; }
+.official-document .border-slate-200 { border-color: #dbe3d9; }
+.official-document .border-slate-300 { border-color: #bdc8c0; }
+.official-document .border-slate-700 { border-color: #52695c; }
+.official-document .rounded { border-radius: 4px; }
+.official-document .object-contain { object-fit: contain; }
+.official-document .gap-1\.5 { gap: .375rem; }
+.official-document .gap-6 { gap: 1.5rem; }
+.official-document .gap-8 { gap: 2rem; }
+.official-document .p-0 { padding: 0; }
+.official-document .p-1 { padding: .25rem; }
+.official-document .p-1\.5 { padding: .375rem; }
+.official-document .p-2 { padding: .5rem; }
+.official-document .p-2\.5 { padding: .625rem; }
+.official-document .p-3 { padding: .75rem; }
+.official-document .p-4 { padding: 1rem; }
+.official-document .px-1 { padding-left: .25rem; padding-right: .25rem; }
+.official-document .px-2 { padding-left: .5rem; padding-right: .5rem; }
+.official-document .px-3 { padding-left: .75rem; padding-right: .75rem; }
+.official-document .py-1 { padding-top: .25rem; padding-bottom: .25rem; }
+.official-document .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+.official-document .pt-4 { padding-top: 1rem; }
+.official-document .pb-2 { padding-bottom: .5rem; }
+.official-document .pl-2 { padding-left: .5rem; }
+.official-document .pr-4 { padding-right: 1rem; }
+.official-document .pr-6 { padding-right: 1.5rem; }
+.official-document .pr-8 { padding-right: 2rem; }
+.official-document .mt-3 { margin-top: .75rem; }
+.official-document .mt-4 { margin-top: 1rem; }
+.official-document .mt-6 { margin-top: 1.5rem; }
+.official-document .mt-8 { margin-top: 2rem; }
+.official-document .mb-0 { margin-bottom: 0; }
+.official-document .mb-6 { margin-bottom: 1.5rem; }
+.official-document .mb-8 { margin-bottom: 2rem; }
+.official-document .ml-1 { margin-left: .25rem; }
+.official-document .ml-4 { margin-left: 1rem; }
+.official-document .mr-2 { margin-right: .5rem; }
+.official-document .mr-3 { margin-right: .75rem; }
+.official-document .mx-1 { margin-left: .25rem; margin-right: .25rem; }
+.official-document .mx-2 { margin-left: .5rem; margin-right: .5rem; }
+.official-document .mx-auto { margin-left: auto; margin-right: auto; }
+.official-document .my-2 { margin-top: .5rem; margin-bottom: .5rem; }
+.official-document .my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+.official-document .my-8 { margin-top: 2rem; margin-bottom: 2rem; }
+.official-document .space-y-1 > * + * { margin-top: .25rem; }
+.official-document .space-y-1\.5 > * + * { margin-top: .375rem; }
+.official-document .space-y-2 > * + * { margin-top: .5rem; }
+.official-document .space-y-3 > * + * { margin-top: .75rem; }
+.official-document .space-y-6 > * + * { margin-top: 1.5rem; }
+.official-document .w-6 { width: 1.5rem; }
+.official-document .w-8 { width: 2rem; }
+.official-document .w-10 { width: 2.5rem; }
+.official-document .w-12 { width: 3rem; }
+.official-document .w-14 { width: 3.5rem; }
+.official-document .w-16 { width: 4rem; }
+.official-document .w-20 { width: 5rem; }
+.official-document .w-24 { width: 6rem; }
+.official-document .w-28 { width: 7rem; }
+.official-document .w-32 { width: 8rem; }
+.official-document .w-36 { width: 9rem; }
+.official-document .w-40 { width: 10rem; }
+.official-document .w-44 { width: 11rem; }
+.official-document .w-48 { width: 12rem; }
+.official-document .w-64 { width: 16rem; }
+.official-document .h-32 { height: 8rem; }
+
+@media print {
+  .official-document .table-wrapper { overflow: visible; }
+  .official-document .doc-table { border: 1px solid #333; color: #111; }
+  .official-document .doc-table th,
+  .official-document .doc-table td { border: 1px solid #666; padding: 4px 5px; }
+  .official-document .doc-table th { background: #f0f0f0 !important; color: #111; }
+  .official-document .doc-table thead { display: table-header-group; }
+  .official-document .doc-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .official-document .doc-table tbody tr:hover > td { background: transparent; }
+  .official-document .info-bar-box { background: #fff; border: 1px solid #777; border-radius: 0; padding: 8px 10px; break-inside: avoid; }
+  .official-document .info-bar-label { color: #111; }
+  .official-document .approval-box .approval-table th,
+  .official-document .approval-box .sign-cell { border: 1px solid #555; }
+  .official-document .sign-cell { height: 54px; }
+}

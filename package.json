@@ -1,21 +1,11 @@
 {
-  "name": "safety-form-automation",
-  "private": true,
+  "name": "school-safety-integrated-suite",
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
+  "description": "학교 산업안전보건 5개 프로그램 통합 실행기",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.48.1",
-    "lucide-react": "^1.16.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11"
+    "start": "node launcher/start.mjs",
+    "stop": "node launcher/stop.mjs",
+    "health": "node launcher/healthcheck.mjs"
   }
 }

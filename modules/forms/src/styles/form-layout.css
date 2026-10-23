@@ -1,0 +1,154 @@
+/* Keep Korean words intact and let inline fields use the space left by labels. */
+.official-document {
+  word-break: keep-all;
+}
+
+.official-document .doc-top-subtext {
+  margin-left: auto;
+  text-align: right;
+}
+
+.official-document :is(.form-input, .table-input, .pledge-input, .table-textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.official-document .table-wrapper { max-width: 100%; overflow-x: auto; }
+
+.official-document .flex { min-width: 0; }
+.official-document .flex-1 { flex: 1 1 0%; min-width: 0; }
+.official-document .flex-wrap { flex-wrap: wrap; }
+.official-document .flex-col { flex-direction: column; }
+.official-document .items-start { align-items: flex-start; }
+.official-document .justify-center { justify-content: center; }
+.official-document .justify-end { justify-content: flex-end; }
+.official-document .inline-block { display: inline-block; }
+
+/* These widths are already specified in the form JSX. */
+.official-document .w-6 { width: 1.5rem; }
+.official-document .w-8 { width: 2rem; }
+.official-document .w-10 { width: 2.5rem; }
+.official-document .w-12 { width: 3rem; }
+.official-document .w-14 { width: 3.5rem; }
+.official-document .w-16 { width: 4rem; }
+.official-document .w-20 { width: 5rem; }
+.official-document .w-24 { width: 6rem; }
+.official-document .w-28 { width: 7rem; }
+.official-document .w-32 { width: 8rem; }
+.official-document .w-36 { width: 9rem; }
+.official-document .w-40 { width: 10rem; }
+.official-document .w-44 { width: 11rem; }
+.official-document .w-48 { width: 12rem; }
+.official-document .w-64 { width: 16rem; }
+
+.official-document .btn-sign-trigger,
+.official-document .form-inline-token {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.official-document .btn-sign-trigger > svg { flex-shrink: 0; }
+.official-document .form-inline-signature { flex: 0 0 3rem; width: 3rem; min-width: 0; }
+.official-document .form-pledge-row { width: min(100%, 34rem); min-width: 0; }
+.official-document .form-field-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 0 1 15rem;
+}
+.official-document .form-field-pair.form-field-grow { flex: 1 1 16rem; }
+.official-document .form-field-pair.form-field-compact { flex: 0 1 12rem; }
+.official-document .form-field-pair > input { width: 0; min-width: 0; flex: 1 1 0%; }
+
+.official-document .education-datetime-group {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.official-document .info-bar-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+.official-document .info-bar-item {
+  display: flex;
+  align-items: center;
+  flex: 1 1 210px;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.official-document .info-bar-label { flex-shrink: 0; white-space: nowrap; }
+.official-document .info-bar-item > input { flex: 1; width: 0; }
+
+.incident-signatures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 1.5rem 0;
+}
+.incident-signature-row {
+  display: flex;
+  align-items: center;
+  flex: 1 1 330px;
+  min-width: 0;
+  gap: 0.35rem;
+}
+.incident-signature-row > input {
+  flex: 1 1 7rem;
+  width: 7rem;
+  min-width: 3.5rem;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+.incident-signature-row > .sign-preview {
+  flex: 0 0 3rem;
+  width: 3rem;
+}
+.incident-addressee {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin-top: 1.5rem;
+}
+.incident-office-name {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+.official-document .incident-office-name > input {
+  width: 6em;
+  min-width: 4em;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+}
+
+.meeting-heading {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.meeting-heading-main { flex: 1 1 410px; min-width: 0; }
+.meeting-school-row { display: flex; align-items: center; gap: 0.5rem; }
+.meeting-school-row > input { flex: 0 1 12rem; }
+.meeting-period-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; }
+.meeting-period-part { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+.official-document .meeting-period-part > input { padding-left: 0.3rem; padding-right: 0.3rem; }
+.official-document .meeting-heading > .approval-table { flex: 0 0 170px; width: 170px; margin-left: auto; }
+
+@media print {
+  .official-document .table-wrapper { overflow: visible; }
+  .incident-signatures,
+  .incident-addressee,
+  .meeting-heading { break-inside: avoid; }
+}
