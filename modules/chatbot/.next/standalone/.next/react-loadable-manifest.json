@@ -1,0 +1,14 @@
+{
+  "..\\..\\..\\..\\integration\\modules\\chatbot\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 1684,
+    "files": [
+      "static/chunks/684.a8f4b519c6f7fb43.js"
+    ]
+  },
+  "..\\..\\..\\..\\integration\\modules\\chatbot\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 6313,
+    "files": [
+      "static/chunks/313.ad9946d4e90cea0c.js"
+    ]
+  }
+}

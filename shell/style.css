@@ -572,3 +572,73 @@ http://scripts.sil.org/OFL
 .suite-v4.reference-work .work-calendar-day .calendar-schedule-item{display:block;min-width:0;width:100%;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px;font-size:14px;padding:0;flex-shrink:0}
 .suite-v4.reference-work .work-calendar-day>.calendar-more{grid-column:2;grid-row:1;position:static!important;max-width:100%;white-space:nowrap;font-size:10px!important;line-height:20px;cursor:pointer}
 .ref-task-copy strong[role=button]{cursor:pointer}
+.law-workbook-download{background:#f4fbf8;border-color:#b9ddd0}
+.law-workbook-download .resource-meta{display:grid;gap:2px}
+.law-workbook-download .btn{flex-shrink:0;white-space:nowrap}
+.law-workbook-note{margin-top:8px!important}
+@media(max-width:600px){.law-workbook-download{align-items:flex-start;flex-direction:column}.law-workbook-download .btn{width:100%;text-align:center}}
+
+/* 일정·업무관리: 고정 픽셀 합계가 본문 폭을 넘지 않도록 실제 레이아웃을 유동화한다. */
+.suite-v4.reference-work .compact-work-view,
+.suite-v4.reference-work .reference-dashboard,
+.suite-v4.reference-work .reference-top,
+.suite-v4.reference-work .ref-calendar,
+.suite-v4.reference-work .ref-daily,
+.suite-v4.reference-work .ref-daily-columns,
+.suite-v4.reference-work .ref-single-toolbar,
+.suite-v4.reference-work .ref-table-scroll{box-sizing:border-box;min-width:0;max-width:100%;width:100%}
+.suite-v4.reference-work .reference-top{grid-template-columns:minmax(360px,42%) minmax(0,1fr)}
+.suite-v4.reference-work .ref-daily-columns{margin-left:0;grid-template-columns:minmax(0,1.65fr) minmax(180px,.95fr)}
+.suite-v4.reference-work .ref-metric-strip{grid-template-columns:repeat(5,minmax(0,1fr));max-width:100%}
+.suite-v4.reference-work .ref-task-table{width:100%;min-width:0;table-layout:fixed}
+.suite-v4.reference-work .ref-task-table th:nth-child(1){width:4%}
+.suite-v4.reference-work .ref-task-table th:nth-child(2){width:6%}
+.suite-v4.reference-work .ref-task-table th:nth-child(3){width:24%}
+.suite-v4.reference-work .ref-task-table th:nth-child(4){width:8%}
+.suite-v4.reference-work .ref-task-table th:nth-child(5){width:17%}
+.suite-v4.reference-work .ref-task-table th:nth-child(6){width:13%}
+.suite-v4.reference-work .ref-task-table th:nth-child(7){width:9%}
+.suite-v4.reference-work .ref-task-table th:nth-child(8){width:11%}
+.suite-v4.reference-work .ref-task-table th:nth-child(9){width:8%}
+.suite-v4.reference-work .ref-task-copy strong,
+.suite-v4.reference-work .ref-upcoming-task strong,
+.suite-v4.reference-work .ref-task-table td:nth-child(3)>strong{display:block;min-width:0;max-width:100%;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important}
+.linked-form-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #dce6f2}
+.linked-form-row strong,.linked-form-row small{min-width:0;overflow-wrap:anywhere}.linked-form-row small{grid-column:1;color:#61718a}.linked-form-row .btn{grid-column:2;grid-row:1/3;white-space:nowrap}
+@media(max-width:1500px) and (min-width:821px){
+ .suite-v4.reference-work .reference-top{grid-template-columns:minmax(330px,40%) minmax(0,1fr)}
+ .suite-v4.reference-work .ref-daily-columns{grid-template-columns:minmax(0,1.55fr) minmax(150px,.8fr)}
+ .suite-v4.reference-work .ref-single-toolbar{height:auto;grid-template-columns:minmax(210px,1.4fr) minmax(170px,1fr) repeat(3,minmax(80px,.55fr));grid-auto-rows:minmax(38px,auto)}
+ .suite-v4.reference-work .ref-single-toolbar .view-toggle{width:100%;margin-left:0}
+ .suite-v4.reference-work .ref-metric{padding-left:9px;padding-right:9px;gap:7px}
+ .suite-v4.reference-work .ref-metric:first-child{padding-left:12px}
+ .suite-v4.reference-work .ref-task-table th,.suite-v4.reference-work .ref-task-table td{padding-left:7px;padding-right:7px}
+}
+@media(max-width:1100px){
+ .suite-v4.reference-work .reference-top{grid-template-columns:1fr}
+ .suite-v4.reference-work .ref-metric-strip{height:auto;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .suite-v4.reference-work .ref-task-table{min-width:0}
+}
+
+/* Keep the form action with the task it supports in the detail drawer. */
+.drawer-body .task-overview-sub.has-form-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center}
+.drawer-body .task-overview-sub.has-form-actions>span,.drawer-body .task-overview-sub.has-form-actions>strong{grid-column:1}
+.drawer-body .task-overview-form-actions{grid-column:2;grid-row:1/3;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:330px}
+.drawer-body .task-overview-form-actions .btn{white-space:nowrap;text-decoration:none}
+.drawer-body .task-overview-form-item{display:flex;align-items:center;gap:6px}
+.drawer-body .task-overview-form-item small{max-width:130px;color:var(--muted);font-size:11px}
+@media(max-width:580px){.drawer-body .task-overview-sub.has-form-actions{grid-template-columns:1fr}.drawer-body .task-overview-form-actions{grid-column:1;grid-row:auto;justify-content:flex-start;max-width:none;margin-top:7px}}
+
+/* Show the holiday name beside the date without taking the task preview row. */
+.suite-v4 .ref-day.is-public-holiday>b{color:#b52b49}
+.suite-v4 .ref-day>b .calendar-holiday-badge{display:inline-block;flex:0 1 auto;min-width:0;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 3px;border-radius:4px;background:#fff0f3;color:#b52b49;font-size:10px;font-weight:700;line-height:15px;vertical-align:middle}
+.suite-v4 .ref-day>b .calendar-holiday-badge.custom{background:#edf5ff;color:#295482}
+.suite-v4.reference-work .work-calendar-day.is-public-holiday{grid-template-rows:18px 14px minmax(0,1fr);gap:0;padding:3px 4px}
+.suite-v4.reference-work .work-calendar-day.is-public-holiday>b{grid-column:1;grid-row:1;line-height:18px}
+.suite-v4.reference-work .work-calendar-day.is-public-holiday>.calendar-holiday-badge{display:block;grid-column:1/-1;grid-row:2;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:start;padding:0 2px;border-radius:3px;background:#fff0f3;color:#b52b49;font-size:10px;font-weight:700;line-height:14px;text-align:left}
+.suite-v4.reference-work .work-calendar-day.is-public-holiday>.calendar-holiday-badge.custom{background:#edf5ff;color:#295482}
+.suite-v4.reference-work .work-calendar-day.is-public-holiday>.calendar-task-preview{grid-row:3}
+.suite-v4.reference-work .ref-month-grid[style*="--weeks:6"] .work-calendar-day.is-public-holiday{grid-template-rows:16px 12px minmax(0,1fr);padding:2px 3px}
+.suite-v4.reference-work .ref-month-grid[style*="--weeks:6"] .work-calendar-day.is-public-holiday>.calendar-holiday-badge{font-size:9px;line-height:12px}
+.suite-v4 .calendar-schedule-item.calendar-deadline{color:#aa3650;font-weight:700}
+.suite-v4 .calendar-deadline-prefix{white-space:nowrap}

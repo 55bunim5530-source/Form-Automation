@@ -18,12 +18,12 @@
     },
     inspection: {
       title: '시설안전 점검이력',
-      description: 'PDF 평가표, 지적사항, 조치사진과 재점검 이력을 관리합니다.',
+      description: '점검결과, 지적사항, 조치사진과 재점검 이력을 관리합니다.',
       directUrl: '/modules/facility/index.html',
       kind: 'facility',
     },
     msds: {
-      title: 'MSDS·유해물질 관리',
+      title: 'MSDS 업무지원',
       description: '제품 인식부터 MSDS 대장·라벨·교육자료 출력까지 지원합니다.',
       url: 'http://localhost:3000/?embed=1',
       directUrl: 'http://localhost:3000/',
@@ -33,6 +33,9 @@
 
   const moduleIds = new Set(Object.keys(MODULES));
   const moduleState = new Map();
+  const pendingMessages = new Map();
+  const pendingAssistantSaves = new Map();
+  let messageSequence = 0;
   let originalRender;
   let originalModuleRenderer;
   let originalBindPage;
@@ -50,7 +53,8 @@
   }
 
   function paneTemplate(id, config) {
-    const expertLabel = id === 'chatbot' ? '근거 기반 챗봇' : id === 'forms' ? '전문 서식 시스템' : id === 'inspection' ? '전문 점검 시스템' : '전문 MSDS 시스템';
+    const isMsds = id === 'msds';
+    const expertLabel = id === 'chatbot' ? '근거 기반 챗봇' : id === 'forms' ? '전문 서식 시스템' : id === 'inspection' ? '전문 점검 시스템' : 'MSDS 화면으로 돌아가기';
     return `
       <section class="integration-pane" data-module-pane="${id}">
         <header class="integration-toolbar">
@@ -60,9 +64,9 @@
           </div>
           <div class="integration-actions">
             <span class="integration-status" data-module-status>연결 확인 중</span>
-            <button class="integration-tab is-active" type="button" data-module-tab="expert">${expertLabel}</button>
+            <button class="integration-tab is-active" type="button" data-module-tab="expert"${isMsds ? ' style="display:none"' : ''}>${expertLabel}</button>
             <button class="integration-tab" type="button" data-module-tab="legacy">기존 간편기록</button>
-            <a class="integration-open" href="${config.directUrl}" target="_blank" rel="noopener noreferrer">새 창으로 열기 ↗</a>
+            ${isMsds ? '' : `<a class="integration-open" href="${config.directUrl}" target="_blank" rel="noopener noreferrer">새 창으로 열기 ↗</a>`}
           </div>
         </header>
         <div class="integration-body">
@@ -122,6 +126,7 @@
         loading.hidden = true;
         state.loaded = true;
         setStatus(state, '연결됨', 'ready');
+        retryMessage(id);
       });
       expert.append(loading, frame);
       state.frame = frame;
@@ -149,6 +154,10 @@
     const state = ensurePane(id);
     state.activeTab = tab;
     state.pane.querySelectorAll('[data-module-tab]').forEach((button) => button.classList.toggle('is-active', button.dataset.moduleTab === tab));
+    if (id === 'msds') {
+      state.pane.querySelector('[data-module-tab="expert"]').style.display = tab === 'legacy' ? '' : 'none';
+      state.pane.querySelector('[data-module-tab="legacy"]').style.display = tab === 'legacy' ? 'none' : '';
+    }
     state.pane.querySelectorAll('[data-module-view]').forEach((view) => view.classList.toggle('is-active', view.dataset.moduleView === tab));
     if (tab === 'legacy' && !state.legacyLoaded) {
       state.legacy.innerHTML = originalModuleRenderer(id);
@@ -173,6 +182,147 @@
     createHost().classList.remove('is-active');
     document.getElementById('view').style.display = '';
     originalRender();
+  }
+
+  function targetOrigin(id) {
+    return new URL(MODULES[id].url, location.href).origin;
+  }
+
+  function frameModuleForMessage(event) {
+    for (const id of ['chatbot', 'forms', 'msds']) {
+      const frame = moduleState.get(id)?.frame;
+      if (frame?.contentWindow === event.source && event.origin === targetOrigin(id)) return id;
+    }
+    return null;
+  }
+
+  function replyToChatbot(requestId, action, ok, result, error) {
+    const frame = moduleState.get('chatbot')?.frame;
+    if (!frame?.contentWindow) return;
+    frame.contentWindow.postMessage({
+      type: 'safety:assistant-action-result',
+      version: 1,
+      requestId,
+      action,
+      ok,
+      ...(ok ? { result } : { error }),
+    }, targetOrigin('chatbot'));
+  }
+
+  function replyLawContext(requestId, ok, context, error) {
+    const frame = moduleState.get('chatbot')?.frame;
+    if (!frame?.contentWindow) return;
+    frame.contentWindow.postMessage({
+      type: 'safety:chat-law-context-result',
+      version: 1,
+      requestId,
+      ok,
+      ...(ok ? { context } : { error }),
+    }, targetOrigin('chatbot'));
+  }
+
+  async function handleLawContextRequest(payload) {
+    if (payload?.version !== 1) return;
+    const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
+    const question = typeof payload.question === 'string' ? payload.question.trim() : '';
+    if (!requestId || requestId.length > 128) return;
+    if (!question || question.length > 2000) {
+      replyLawContext(requestId, false, null, '질문을 확인할 수 없습니다.');
+      return;
+    }
+    const lookup = window.safetyChatLawContext?.lookup;
+    if (typeof lookup !== 'function') {
+      replyLawContext(requestId, false, null, '공식 법령 조회 기능을 사용할 수 없습니다.');
+      return;
+    }
+    try {
+      const context = await lookup(question);
+      replyLawContext(requestId, true, context);
+    } catch (error) {
+      replyLawContext(requestId, false, null, error instanceof Error ? error.message : '공식 법령을 조회하지 못했습니다.');
+    }
+  }
+
+  function openIntegratedPage(page) {
+    coreApp.page = page;
+    if (moduleIds.has(page)) ensurePane(page).activeTab = 'expert';
+    render();
+  }
+
+  async function handleAssistantAction(payload) {
+    if (payload?.version !== 1) return;
+    const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
+    const action = payload.action;
+    if (!requestId || requestId.length > 128 || !['navigate', 'schedule-preview', 'schedule-save'].includes(action)) return;
+
+    if (action === 'navigate') {
+      const page = payload.module;
+      if (!['work', 'forms', 'inspection', 'msds'].includes(page)) {
+        replyToChatbot(requestId, action, false, null, '연결할 수 없는 기능입니다.');
+        return;
+      }
+      replyToChatbot(requestId, action, true, { module: page });
+      openIntegratedPage(page);
+      return;
+    }
+
+    const method = action === 'schedule-preview' ? 'preview' : 'save';
+    const adapter = window.safetyChatScheduleAdapter;
+    if (typeof adapter?.[method] !== 'function') {
+      replyToChatbot(requestId, action, false, null, '일정관리 기능을 준비하지 못했습니다.');
+      return;
+    }
+
+    try {
+      let operation;
+      let firstSaveRequest = false;
+      if (method === 'save') {
+        operation = pendingAssistantSaves.get(requestId);
+        if (!operation) {
+          firstSaveRequest = true;
+          operation = Promise.resolve().then(() => adapter.save(payload));
+          pendingAssistantSaves.set(requestId, operation);
+        }
+      } else {
+        operation = Promise.resolve().then(() => adapter.preview(payload));
+      }
+      const result = await operation;
+      if (method === 'save' && pendingAssistantSaves.get(requestId) === operation) pendingAssistantSaves.delete(requestId);
+      replyToChatbot(requestId, action, true, result);
+      if (firstSaveRequest && ['saved', 'already-saved'].includes(result?.status)) {
+        // The chatbot frame remains mounted, so its acknowledgement arrives even after the page switch.
+        window.setTimeout(() => openIntegratedPage('work'), 0);
+      }
+    } catch (error) {
+      if (method === 'save') pendingAssistantSaves.delete(requestId);
+      replyToChatbot(requestId, action, false, null, error instanceof Error ? error.message : '일정을 처리하지 못했습니다.');
+    }
+  }
+
+  function flushMessage(id) {
+    const state = moduleState.get(id);
+    const message = pendingMessages.get(id);
+    if (!state?.frame?.contentWindow || !message) return;
+    state.frame.contentWindow.postMessage(message, targetOrigin(id));
+  }
+
+  function retryMessage(id) {
+    [0, 150, 500, 1200, 2500].forEach((delay) => {
+      window.setTimeout(() => {
+        if (pendingMessages.has(id)) flushMessage(id);
+      }, delay);
+    });
+  }
+
+  function openModuleWithMessage(id, message) {
+    if (!moduleIds.has(id)) return false;
+    coreApp.page = id;
+    const state = ensurePane(id);
+    state.activeTab = 'expert';
+    pendingMessages.set(id, { ...message, messageId: `safety-${Date.now()}-${++messageSequence}` });
+    showModule(id);
+    if (state.loaded) retryMessage(id);
+    return true;
   }
 
   function install() {
@@ -205,11 +355,47 @@
     }, true);
 
     window.addEventListener('message', (event) => {
-      const allowed = new Set(['http://127.0.0.1:3001', 'http://localhost:5173', 'http://localhost:3000']);
-      if (!allowed.has(event.origin) || event.data?.type !== 'safety:navigate') return;
-      if (!moduleIds.has(event.data.module)) return;
-      coreApp.page = event.data.module;
-      render();
+      const senderId = frameModuleForMessage(event);
+      if (!senderId) return;
+      if (event.data?.type === 'safety:assistant-action') {
+        if (senderId === 'chatbot') void handleAssistantAction(event.data);
+        return;
+      }
+      if (event.data?.type === 'safety:chat-law-context') {
+        if (senderId === 'chatbot') void handleLawContextRequest(event.data);
+        return;
+      }
+      if (event.data?.type === 'safety:navigate') {
+        if (!moduleIds.has(event.data.module)) return;
+        coreApp.page = event.data.module;
+        render();
+        return;
+      }
+      if (event.data?.type === 'safety:module-ready') {
+        retryMessage(senderId);
+        return;
+      }
+      if (event.data?.type === 'safety:message-accepted') {
+        const id = event.data.module;
+        if (id !== senderId) return;
+        if (pendingMessages.get(id)?.messageId === event.data.messageId) pendingMessages.delete(id);
+        return;
+      }
+      if (senderId === 'forms' && event.data?.type === 'safety:form-saved') {
+        window.safetyTaskIntegration?.onFormSaved?.(event.data);
+      }
+    });
+
+    window.safetyModuleIntegration = Object.freeze({
+      openForm(payload) {
+        const opened = openModuleWithMessage('forms', { type: 'safety:open-form', version: 1, ...payload });
+        if (opened) {
+          const overlay = document.getElementById('overlay');
+          if (overlay) overlay.innerHTML = '';
+        }
+        return opened;
+      },
+      openChatbot(payload) { return openModuleWithMessage('chatbot', { type: 'safety:ask-task', version: 1, ...payload }); },
     });
 
     const requested = new URLSearchParams(location.search).get('module');

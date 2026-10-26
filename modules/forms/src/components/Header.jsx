@@ -1,6 +1,11 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { Shield, Printer, Save, Database, PlusCircle, FolderOpen, ChevronDown, Settings, Building } from 'lucide-react';
-import { FORM_TIMING_GROUPS, getFormSelectionValue, getFormSelection } from '../forms/formTiming';
+import {
+  FORM_TIMING_GROUPS,
+  getFormOptionLabel,
+  getFormSelectionValue,
+  getFormSelection
+} from '../forms/formTiming';
 
 export default function Header({
   activeFormCode,
@@ -89,7 +94,7 @@ export default function Header({
                   <optgroup key={group.label} label={`📂 ${group.label}`}>
                     {group.options.map((option) => (
                       <option key={option.value} value={option.value} title={option.description}>
-                        {option.title}
+                        {getFormOptionLabel(option)}
                       </option>
                     ))}
                   </optgroup>

@@ -15,6 +15,7 @@ runtime/pids/*
 modules/forms/node_modules/
 modules/chatbot/node_modules/
 modules/chatbot/.next/cache/
+modules/integration/modules/chatbot/node_modules/
 
 # Editor and OS files
 .vscode/

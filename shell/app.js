@@ -83,7 +83,7 @@ function escapeHtml(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','
 
 function progressOf(task){const items=task.checklist||[],required=items.filter(x=>x.required!==false);if(!items.length)return {done:0,total:0,pct:0,all:true,requiredDone:0,requiredTotal:0};const done=items.filter(x=>x.done).length,requiredDone=required.filter(x=>x.done).length;return{done,total:items.length,pct:Math.round(done/items.length*100),all:requiredDone===required.length,requiredDone,requiredTotal:required.length}}
 
-function statusOf(task){const p=progressOf(task);if(task.completedByUser&&p.all)return '완료';if(p.done>0)return '진행';if(task.requiresReview)return '확인필요';const diff=dayDiff(task.dueDate||task.date);if(task.dueDate&&diff<0)return '지연';if(task.dueDate&&diff<=7)return '임박';return '예정'}
+function statusOf(task){const p=progressOf(task);if(task.completedByUser)return '완료';if(p.done>0)return '진행';if(task.requiresReview)return '확인필요';const diff=dayDiff(task.dueDate||task.date);if(task.dueDate&&diff<0)return '지연';if(task.dueDate&&diff<=7)return '임박';return '예정'}
 
 function statusBadge(status){const cls={'이번 주 업무':'period-current','이번 달 업무':'period-current','마감 임박':'soon',임박:'soon',지연:'late',완료:'done',진행:'progress',확인필요:'review'}[status]||'';return `<span class="badge ${cls}">${status}</span>`}
 
@@ -584,7 +584,7 @@ function bindPage(){
 
 }
 
-document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.matches('[data-close]')||b.matches('[data-close-overlay]'))closeOverlay();if(b.matches('[data-action="situation"]'))openSituationHub();if(b.matches('[data-new-event]'))openEventForm(b.dataset.newEvent);if(b.matches('[data-action="quick-event"]'))openQuickEvent();if(b.matches('[data-action="generate-regular"]'))generateRegular();if(b.matches('[data-submit-event]'))submitEvent();if(b.matches('[data-save-quick]'))saveQuick();if(b.matches('[data-export-csv]'))exportCSV();if(b.matches('[data-import-csv]'))importCSVFile();if(b.matches('[data-backup]'))backupJSON();if(b.matches('[data-restore]'))restoreJSON();if(b.matches('[data-reset]'))openReset();if(b.matches('[data-edit-task]'))openTaskEdit(b.dataset.editTask);if(b.matches('[data-complete]')){const t=app.data.tasks.find(x=>x.id===b.dataset.complete),p=progressOf(t);if(!p.all){toast('필수 체크리스트를 모두 수행한 뒤 완료할 수 있습니다.');return}t.completedByUser=true;t.completedAt=new Date().toISOString();app.history(t.id,'업무 완료');await app.save();openTask(t.id)}if(b.matches('[data-reopen]')){const t=app.data.tasks.find(x=>x.id===b.dataset.reopen);t.completedByUser=false;t.completedAt=null;app.history(t.id,'완료 취소');await app.save();openTask(t.id)}if(b.matches('[data-delete-task]')){const id=b.dataset.deleteTask;if(confirm('이 일정을 삭제하시겠습니까?')){const removed=app.data.tasks.find(x=>x.id===id);if(removed?.occurrenceKey){app.data.appSettings.suppressed??=[];app.data.appSettings.suppressed.push(removed.occurrenceKey)}app.data.tasks=app.data.tasks.filter(x=>x.id!==id);app.data.taskChecklist=app.data.taskChecklist.filter(x=>x.taskId!==id);app.history(id,'업무 삭제');await app.save();closeOverlay();render();toast('일정을 삭제했습니다.')}}if(b.matches('[data-save-task]')){const f=document.getElementById('taskEdit'),t=app.data.tasks.find(x=>x.id===f.dataset.id),v=Object.fromEntries(new FormData(f));t.originalDate??=t.date;t.originalDueDate??=t.dueDate;t.changes??=[];t.changes.push({at:new Date().toISOString(),before:{date:t.date,dueDate:t.dueDate,responsible:t.responsible},after:v});Object.assign(t,v);t.userModified=true;if(scheduleCalendarLabel(t)==='자료제출'){t.titleEditedByUser=true;t.titleNeedsReview=false;const event=app.data.officialEvents.find(e=>e.id===t.sourceEventId);if(event){event.title=t.name;event.titleEditedByUser=true;event.titleNeedsReview=false;}}app.history(t.id,'일정 수정');await app.save();closeOverlay();render();toast('일정을 수정했습니다.')}if(b.matches('[data-save-master]')){const f=document.getElementById('masterForm'),m=app.data.taskMaster.find(x=>x.taskCode===f.dataset.code)||createMaster(f.dataset.code),v=Object.fromEntries(new FormData(f));if(!f.reportValidity())return;if(!validateRuleForm(f))return;v.checklistItems=v.checklistItems.split('\n').map(x=>x.trim()).filter(Boolean);v.dueOffsetDays=v.dueOffsetDays===''?'':Number(v.dueOffsetDays);v.recurrenceInterval=v.recurrenceInterval===''?'':Number(v.recurrenceInterval);v.active=v.active==='true';Object.assign(m,v);ensureSchedules();await app.save();closeOverlay();render();toast('업무원장을 저장했습니다.')}if(b.matches('[data-apply-csv]')){const mode=document.getElementById('csvMode').value;app.data.taskMaster=mode==='replace'?window.pendingCSV:[...app.data.taskMaster,...window.pendingCSV];await app.save();closeOverlay();render();toast('CSV 업무원장을 반영했습니다.')}if(b.matches('[data-apply-restore]')){app.data=mergeBackup(app.data,window.pendingRestore);migrateMasterData();ensureSchedules();await app.save();closeOverlay();render();toast('백업 데이터를 복원했습니다.')}if(b.matches('[data-confirm-reset]')){await storageAdapter.clear();app.data=freshData();migrateMasterData();ensureSchedules();await app.save();closeOverlay();app.page='home';render();toast('전체 데이터를 초기화했습니다.')}});
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.matches('[data-close]')||b.matches('[data-close-overlay]'))closeOverlay();if(b.matches('[data-action="situation"]'))openSituationHub();if(b.matches('[data-new-event]'))openEventForm(b.dataset.newEvent);if(b.matches('[data-action="quick-event"]'))openQuickEvent();if(b.matches('[data-action="generate-regular"]'))generateRegular();if(b.matches('[data-submit-event]'))submitEvent();if(b.matches('[data-save-quick]'))saveQuick();if(b.matches('[data-export-csv]'))exportCSV();if(b.matches('[data-import-csv]'))importCSVFile();if(b.matches('[data-backup]'))backupJSON();if(b.matches('[data-restore]'))restoreJSON();if(b.matches('[data-reset]'))openReset();if(b.matches('[data-edit-task]'))openTaskEdit(b.dataset.editTask);if(b.matches('[data-complete]')){const t=app.data.tasks.find(x=>x.id===b.dataset.complete),p=progressOf(t);if(!p.all&&!b.hasAttribute('data-checklist-free')){toast('필수 체크리스트를 모두 수행한 뒤 완료할 수 있습니다.');return}t.completedByUser=true;t.completedAt=new Date().toISOString();app.history(t.id,'업무 완료');await app.save();openTask(t.id)}if(b.matches('[data-reopen]')){const t=app.data.tasks.find(x=>x.id===b.dataset.reopen);t.completedByUser=false;t.completedAt=null;app.history(t.id,'완료 취소');await app.save();openTask(t.id)}if(b.matches('[data-delete-task]')){const id=b.dataset.deleteTask;if(confirm('이 일정을 삭제하시겠습니까?')){const removed=app.data.tasks.find(x=>x.id===id);if(removed?.occurrenceKey){app.data.appSettings.suppressed??=[];app.data.appSettings.suppressed.push(removed.occurrenceKey)}app.data.tasks=app.data.tasks.filter(x=>x.id!==id);app.data.taskChecklist=app.data.taskChecklist.filter(x=>x.taskId!==id);app.history(id,'업무 삭제');await app.save();closeOverlay();render();toast('일정을 삭제했습니다.')}}if(b.matches('[data-save-task]')){const f=document.getElementById('taskEdit'),t=app.data.tasks.find(x=>x.id===f.dataset.id),v=Object.fromEntries(new FormData(f));t.originalDate??=t.date;t.originalDueDate??=t.dueDate;t.changes??=[];t.changes.push({at:new Date().toISOString(),before:{date:t.date,dueDate:t.dueDate,responsible:t.responsible},after:v});Object.assign(t,v);t.userModified=true;if(scheduleCalendarLabel(t)==='자료제출'){t.titleEditedByUser=true;t.titleNeedsReview=false;const event=app.data.officialEvents.find(e=>e.id===t.sourceEventId);if(event){event.title=t.name;event.titleEditedByUser=true;event.titleNeedsReview=false;}}app.history(t.id,'일정 수정');await app.save();closeOverlay();render();toast('일정을 수정했습니다.')}if(b.matches('[data-save-master]')){const f=document.getElementById('masterForm'),m=app.data.taskMaster.find(x=>x.taskCode===f.dataset.code)||createMaster(f.dataset.code),v=Object.fromEntries(new FormData(f));if(!f.reportValidity())return;if(!validateRuleForm(f))return;v.checklistItems=v.checklistItems.split('\n').map(x=>x.trim()).filter(Boolean);v.dueOffsetDays=v.dueOffsetDays===''?'':Number(v.dueOffsetDays);v.recurrenceInterval=v.recurrenceInterval===''?'':Number(v.recurrenceInterval);v.active=v.active==='true';Object.assign(m,v);ensureSchedules();await app.save();closeOverlay();render();toast('업무원장을 저장했습니다.')}if(b.matches('[data-apply-csv]')){const mode=document.getElementById('csvMode').value;app.data.taskMaster=mode==='replace'?window.pendingCSV:[...app.data.taskMaster,...window.pendingCSV];await app.save();closeOverlay();render();toast('CSV 업무원장을 반영했습니다.')}if(b.matches('[data-apply-restore]')){app.data=mergeBackup(app.data,window.pendingRestore);migrateMasterData();ensureSchedules();await app.save();closeOverlay();render();toast('백업 데이터를 복원했습니다.')}if(b.matches('[data-confirm-reset]')){await storageAdapter.clear();app.data=freshData();migrateMasterData();ensureSchedules();await app.save();closeOverlay();app.page='home';render();toast('전체 데이터를 초기화했습니다.')}});
 
 document.addEventListener('change',e=>{if(e.target.matches('[data-check]'))toggleCheck(e.target.dataset.checkTask,e.target.dataset.check,e.target.checked);if(e.target.id==='quickType'){const personal=e.target.value==='개인';document.querySelectorAll('.official-field').forEach(x=>x.classList.toggle('hidden',personal));document.querySelectorAll('.personal-field').forEach(x=>x.classList.toggle('hidden',!personal));document.getElementById('quickTitleLabel').textContent=personal?'제목':'공문제목'}});
 
@@ -2593,8 +2593,6 @@ render=function(){approvedRenderBase();document.documentElement.style.setPropert
 
   document.querySelectorAll('.ref-task-table tbody tr').forEach(row=>{const id=row.querySelector('[data-task]')?.dataset.task,t=app.data.tasks.find(x=>x.id===id);if(!t)return;const cell=row.children[5];if(cell){const small=cell.querySelector('small');cell.innerHTML=approvedFullDate(taskDate(t))+(small?small.outerHTML:'')}row.querySelector('strong')?.setAttribute('title',t.name)});
 
-  const holiday=document.querySelector('.ref-day[data-select-day$="-10-09"]');if(holiday&&!holiday.classList.contains('outside')){const label=document.createElement('small');label.className='holiday-label';label.textContent='한글날';holiday.append(label)}
-
  }
 
 };
@@ -2670,9 +2668,24 @@ function renderTaskOverview(section,t,m){
   section.classList.add('task-overview');
   section.innerHTML=taskOverviewHtml(t,m);
 }
+const LAW_OBLIGATION_WORKBOOK={
+  url:'assets/downloads/law-obligation-self-check-2025-h2.xlsx',
+  fileName:'2025년 하반기 안전보건 관계법령상 의무이행 자체 점검 및 관리감독자 평가표(평가표).xlsx',
+  label:'안전보건 관계법령상 의무이행 자체 점검 및 관리감독자 평가표'
+};
+function usesLawObligationWorkbook(t,m,d){
+  const code=t?.masterCode||t?.taskCode||m?.taskCode||'';
+  const text=[t?.name,t?.subTaskName,m?.taskName,m?.subTaskName,d?.official,d?.sub].filter(Boolean).join(' ');
+  const isHalfyear=['LAW-001','LAW-002'].includes(code)||m?.recurrenceType==='halfyear'||t?.recurrenceType==='halfyear';
+  return isHalfyear&&(['LAW-001','LAW-002'].includes(code)||/안전보건\s*관계\s*법령(?:상)?\s*의무이행.*(?:자체점검|점검|평가)/.test(text));
+}
+function lawObligationWorkbookHtml(){
+  const workbook=LAW_OBLIGATION_WORKBOOK;
+  return `<div class="resource-row law-workbook-download"><div class="resource-meta"><strong>첨부 엑셀 서식</strong><span class="ready-label">${escapeHtml(workbook.label)}</span></div><a class="btn primary" data-law-workbook-download href="${workbook.url}" download="${escapeHtml(workbook.fileName)}">엑셀 파일 다운로드</a></div><p class="subtle law-workbook-note">파일을 내려받아 Excel에서 작성한 뒤 안내된 제출 절차에 따라 처리하세요.</p>`;
+}
 const openTaskBeforeNames=openTask;
 openTask=function(id){
-  openTaskBeforeNames(id);const t=app.data.tasks.find(t=>t.id===id),m=app.data.taskMaster.find(m=>m.taskCode===t?.masterCode);
+  openTaskBeforeNames(id);const t=app.data.tasks.find(t=>t.id===id),m=app.data.taskMaster.find(m=>m.taskCode===(t?.masterCode||t?.taskCode));
   if(!m){const overview=[...document.querySelectorAll('.drawer-body .detail-section')].find(s=>s.querySelector('.num')?.textContent==='1');if(t)renderTaskOverview(overview,t,null);return;}const area=document.querySelector('.drawer-body');if(!area)return;const d=taskDisplay(t);
   area.querySelector('.detail-title').textContent=d.official||d.title;
   area.querySelector('.detail-title').insertAdjacentHTML('beforebegin','<span class="kicker">① 공식 업무명</span>');
@@ -2687,7 +2700,7 @@ openTask=function(id){
   if(overview){renderTaskOverview(overview,t,m);area.querySelector('.drawer-summary')?.after(overview)}
   if(procedure)procedure.remove();
   if(checklist){checklist.querySelector('h4').innerHTML='③ 업무 처리 체크리스트';overview?.after(checklist)}
-  if(forms){forms.innerHTML=`<h4>④ 관련 서식</h4>${resourceHtml('원문 대조 서식',d.forms,'서식')}<p>${escapeHtml(d.formAction)}</p><p class="subtle">서식 열람·작성만으로 현장점검·보고가 완료 처리되지 않습니다.</p>`+(t.forms&&t.forms!==d.forms?`<details><summary>기존 저장 서식·연결</summary>${resourceHtml('기존 연결',t.forms,'서식')}</details>`:'');checklist?.after(forms)}
+  if(forms){const workbookOnly=usesLawObligationWorkbook(t,m,d);forms.innerHTML=workbookOnly?`<h4>④ 관련 서식</h4>${lawObligationWorkbookHtml()}`:`<h4>④ 관련 서식</h4>${resourceHtml('원문 대조 서식',d.forms,'서식')}<p>${escapeHtml(d.formAction)}</p><p class="subtle">서식 열람·작성만으로 현장점검·보고가 완료 처리되지 않습니다.</p>`+(t.forms&&t.forms!==d.forms?`<details><summary>기존 저장 서식·연결</summary>${resourceHtml('기존 연결',t.forms,'서식')}</details>`:'');checklist?.after(forms)}
   if(source){source.querySelector('h4').innerHTML='⑤ 업무 근거';source.insertAdjacentHTML('beforeend',`<p>명칭 확인 근거: ${escapeHtml(d.source)}<br>명칭 원문: ${d.status==='confirmed'?'확인완료':'확인 필요'} (법령·적용조건 검증과 별도)</p>`);forms?.after(source)}
   const actions=area.querySelector('.detail-actions');if(actions)actions.insertAdjacentHTML('beforebegin','<h4>⑥ 완료 처리</h4>');
   if(dates)source?.after(dates);
@@ -2887,7 +2900,7 @@ openTask=function(id){openTaskBeforeScoped(id);const t=app.data.tasks.find(t=>t.
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
  // Capture prevents the legacy delete/complete handlers from performing a second action.
  if(b.matches('[data-delete-task]')){e.preventDefault();e.stopImmediatePropagation();askDeleteSchedule(b.dataset.deleteTask);return;}
- if(b.matches('[data-complete]')){const t=app.data.tasks.find(t=>t.id===b.dataset.complete);if(t?.workflowKind==='long'&&t.workflowPhase==='main'&&progressOf(t).all){e.preventDefault();e.stopImmediatePropagation();modal('정기 실시 결과 저장',`<form id="longCompleteForm" class="form-grid" data-task-id="${t.id}">${inputField('performedOn','확인된 실제 정기 실시일',t.date||localToday(),'date','required max="'+localToday()+'"')}<div class="field full"><label>실시 결과·개선사항 요약</label><textarea name="result" required></textarea></div></form><p>서식 작성만으로 완료하지 마세요. 실제 실시 결과를 저장하면 다음 정기 목표일을 제안합니다.</p>`,`<button class="btn" data-close>취소</button><button class="btn primary" data-record-long-complete>결과 저장·완료</button>`);return;}}
+ if(b.matches('[data-complete]')){const t=app.data.tasks.find(t=>t.id===b.dataset.complete);if(t?.workflowKind==='long'&&t.workflowPhase==='main'){e.preventDefault();e.stopImmediatePropagation();modal('정기 실시 결과 저장',`<form id="longCompleteForm" class="form-grid" data-task-id="${t.id}">${inputField('performedOn','확인된 실제 정기 실시일',t.date||localToday(),'date','required max="'+localToday()+'"')}<div class="field full"><label>실시 결과·개선사항 요약</label><textarea name="result" required></textarea></div></form><p>서식 작성만으로 완료하지 마세요. 실제 실시 결과를 저장하면 다음 정기 목표일을 제안합니다.</p>`,`<button class="btn" data-close>취소</button><button class="btn primary" data-record-long-complete>결과 저장·완료</button>`);return;}}
 },true);
 document.addEventListener('input',e=>{if(e.target.closest('#eventForm[data-kind="accident"]')){const f=e.target.closest('form'),v=Object.fromEntries(new FormData(f)),urgent=v.death==='예'||['예','의심'].includes(v.serious);const box=f.querySelector('.accident-live');box.classList.toggle('urgent-incident',urgent);box.textContent=urgent?'긴급: 응급조치·작업중지·대피 및 관할 노동관서·교육청 긴급보고 여부를 지금 확인하세요. 입력 완료를 기다리지 마세요.':'확인되지 않은 정보는 확인 필요로 저장됩니다. 보고기한은 기준일·대상·수행주체 확인 후 산정합니다.';}});
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
@@ -3602,12 +3615,15 @@ function performanceTimingHtml(t){
  }
  function monthCalendar(home){
   const y=app.calendarDate.getFullYear(),m=app.calendarDate.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),weeks=Math.ceil((first.getDay()+new Date(y,m+1,0).getDate())/7),index=calendarTaskIndex();let cells='';
-  for(let i=0;i<weeks*7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const day=isoDate(d),tasks=index.get(day)||[],visible=tasks.slice(0,1);
+  for(let i=0;i<weeks*7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const day=isoDate(d),tasks=[...(index.get(day)||[])].sort((a,b)=>Number(b.dueDate===day)-Number(a.dueDate===day)),visible=tasks.slice(0,1);
+   const holiday=window.KoreanPublicHolidays?.getHoliday(day,app.data.appSettings.holidays||[]),holidayShort=holiday?.name.startsWith('대체공휴일')?'대체휴일':holiday?.name==='어린이날 · 부처님오신날'?'어린이날 외':holiday?.name||'';
    const dots=tasks.slice(0,5).map(t=>{const status=statusOf(t),color=status==='지연'?'red':status==='임박'?'orange':/교육/.test(t.category)?'green':/점검/.test(t.category)?'purple':day===localToday()?'blue':t.type==='정기'?'purple':'muted';return `<i class="${color}" title="${escapeHtml(taskDisplay(t).title)}"></i>`}).join('');
-   const labels=visible.map(t=>`<span class="calendar-schedule-item" role="button" tabindex="0" data-calendar-task="${esc(t.id)}" title="${esc(t.name||taskDisplay(t).title)}">${esc(scheduleCalendarLabel(t))}</span>`).join('');
-   cells+=`<button class="ref-day ${home?'home-calendar-day':'work-calendar-day'} ${d.getMonth()!==m?'outside':''} ${day===app.dashDate?'selected':''} ${d.getDay()===0?'sunday':d.getDay()===6?'saturday':''}" ${home?'data-suite-day':'data-select-day'}="${day}" aria-label="${day} 일정 ${tasks.length}건"><b>${d.getDate()}${dots?'<span class="suite-date-dots">'+dots+'</span>':''}</b>${labels?'<span class="calendar-task-preview">'+labels+'</span>':''}${tasks.length>1?`<span class="calendar-more" role="button" tabindex="0" data-calendar-more="${day}">+${tasks.length-1}건</span>`:''}${(app.data.appSettings.holidays||[]).includes(day)?'<small class="holiday-label">휴무</small>':''}</button>`;
+   const labels=visible.map(t=>{const deadline=t.dueDate===day;return `<span class="calendar-schedule-item ${deadline?'calendar-deadline':''}" role="button" tabindex="0" data-calendar-task="${esc(t.id)}" title="${deadline?'마감일 · ':''}${esc(t.name||taskDisplay(t).title)}">${deadline?'<span class="calendar-deadline-prefix">마감 · </span>':''}${esc(scheduleCalendarLabel(t))}</span>`}).join('');
+   const holidayBadge=holiday?`<small class="calendar-holiday-badge ${holiday.kind==='custom'?'custom':''}" title="${esc(holiday.name)}">${esc(holidayShort)}</small>`:'';
+   cells+=`<button class="ref-day ${home?'home-calendar-day':'work-calendar-day'} ${d.getMonth()!==m?'outside':''} ${day===app.dashDate?'selected':''} ${d.getDay()===0?'sunday':d.getDay()===6?'saturday':''} ${holiday?'is-public-holiday':''}" ${home?'data-suite-day':'data-select-day'}="${day}" aria-label="${day}${holiday?' '+esc(holiday.name):''} 일정 ${tasks.length}건"><b>${d.getDate()}${home&&holiday?holidayBadge:dots?'<span class="suite-date-dots">'+dots+'</span>':''}</b>${!home?holidayBadge:''}${labels?'<span class="calendar-task-preview">'+labels+'</span>':''}${tasks.length>1?`<span class="calendar-more" role="button" tabindex="0" data-calendar-more="${day}">+${tasks.length-1}건</span>`:''}</button>`;
   }
-  return `<section class="panel ref-calendar ${home?'home-month-calendar':'scoped-long-calendar'}"><div class="ref-calendar-head"><div><button class="btn" data-cal="prev" aria-label="이전달">‹</button><button class="btn" data-cal="next" aria-label="다음달">›</button></div><h3>${y}년 ${m+1}월</h3><button class="btn" data-dash-today>오늘</button></div><div class="ref-weekdays">${['일','월','화','수','목','금','토'].map(x=>'<span>'+x+'</span>').join('')}</div><div class="ref-month-grid" style="--weeks:${weeks}">${cells}</div>${home?'':'<div class="ref-calendar-note">일정명을 선택하면 상세 내용을 확인합니다.</div>'}</section>`;
+  const holidayNote=window.KoreanPublicHolidays?.hasFullYearData(y)?'공휴일·학교 휴무일 표시':'고정 공휴일만 표시 · 음력·임시공휴일은 휴무일 설정에서 추가';
+  return `<section class="panel ref-calendar ${home?'home-month-calendar':'scoped-long-calendar'}"><div class="ref-calendar-head"><div><button class="btn" data-cal="prev" aria-label="이전달">‹</button><button class="btn" data-cal="next" aria-label="다음달">›</button></div><h3>${y}년 ${m+1}월</h3><button class="btn" data-dash-today>오늘</button></div><div class="ref-weekdays">${['일','월','화','수','목','금','토'].map(x=>'<span>'+x+'</span>').join('')}</div><div class="ref-month-grid" style="--weeks:${weeks}">${cells}</div>${home?'':`<div class="ref-calendar-note">일정명을 선택하면 상세 내용을 확인합니다. · ${holidayNote}</div>`}</section>`;
  }
  referenceMonth=function(){return monthCalendar(false)};
  suiteHomeCalendar=function(){return monthCalendar(true)};
@@ -4087,12 +4103,331 @@ function performanceTimingHtml(t){
  function calendarOpen(ev){const b=ev.target.closest('[data-calendar-task],.ref-task-copy strong[data-task]');if(!b||ev.type==='keydown'&&!['Enter',' '].includes(ev.key))return;ev.preventDefault();ev.stopImmediatePropagation();openTask(b.dataset.calendarTask||b.dataset.task);}
  window.addEventListener('click',calendarOpen,true);window.addEventListener('keydown',calendarOpen,true);
  const actualOpen=openTask;
- openTask=function(id){actualOpen(id);const t=app.data.tasks.find(t=>t.id===id);if(!t||t.workflowKind==='incident')return;const period=performancePeriod(t);if(period)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin','<section class="detail-section"><h4>수행기간과 관리기준일</h4><p>'+performanceTimingHtml(t)+'</p></section>');const e=app.data.officialEvents.find(e=>e.id===t.sourceEventId)||app.data.personalEvents.find(e=>e.id===t.sourceEventId);if(t.titleNeedsReview&&!e)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin','<p>제목 확인 필요: 원문을 확인한 뒤 일정 수정에서 제목을 확정하세요.</p>');if(e)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin',`<section class="detail-section"><h4>등록 일정 상세</h4><p>실제 제목: ${esc(t.name)}${t.titleNeedsReview?'<br>제목 확인 필요: 원문을 확인한 뒤 일정 수정에서 제목을 확정하세요.':''}<br>시행기관: ${esc(e.agency||'해당 없음·미입력')}<br>문서번호: ${esc(e.documentNo||'해당 없음·미입력')}<br>제출기한: ${esc(t.dueDate||'해당 없음·미입력')}<br>시간: ${esc(t.time||e.time||'미입력')}<br>처리상태: ${esc(statusOf(t))}</p>${(e.body||t.body)?'<div class="official-document-body" style="white-space:pre-wrap">'+esc(e.body||t.body)+'</div>':''}${e.rawText?'<details><summary>공문 원문 참고</summary><pre>'+esc(e.rawText)+'</pre></details>':''}</section>`);};
+ openTask=function(id){
+   actualOpen(id);
+   const t=app.data.tasks.find(t=>t.id===id);
+   if(!t||t.workflowKind==='incident')return;
+   const period=performancePeriod(t);
+   if(period)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin','<section class="detail-section"><h4>수행기간과 관리기준일</h4><p>'+performanceTimingHtml(t)+'</p></section>');
+   const e=app.data.officialEvents.find(e=>e.id===t.sourceEventId)||app.data.personalEvents.find(e=>e.id===t.sourceEventId);
+   if(t.titleNeedsReview&&!e)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin','<p>제목 확인 필요: 원문을 확인한 뒤 일정 수정에서 제목을 확정하세요.</p>');
+   if(e)document.querySelector('.drawer-body')?.insertAdjacentHTML('afterbegin',`<section class="detail-section"><h4>등록 일정 상세</h4><p>실제 제목: ${esc(t.name)}${t.titleNeedsReview?'<br>제목 확인 필요: 원문을 확인한 뒤 일정 수정에서 제목을 확정하세요.':''}<br>시행기관: ${esc(e.agency||'해당 없음·미입력')}<br>문서번호: ${esc(e.documentNo||'해당 없음·미입력')}<br>제출기한: ${esc(t.dueDate||'해당 없음·미입력')}<br>시간: ${esc(t.time||e.time||'미입력')}<br>처리상태: ${esc(statusOf(t))}</p>${(e.body||t.body)?'<div class="official-document-body" style="white-space:pre-wrap">'+esc(e.body||t.body)+'</div>':''}${e.rawText?'<details><summary>공문 원문 참고</summary><pre>'+esc(e.rawText)+'</pre></details>':''}</section>`);
+   const m=app.data.taskMaster.find(m=>m.taskCode===(t.masterCode||t.taskCode));
+   const d=taskDisplay(t);
+   if(usesLawObligationWorkbook(t,m,d)){
+     const drawer=document.querySelector('.drawer-body');
+     const forms=[...drawer.querySelectorAll('.detail-section')].find(section=>section.querySelector('h4')?.textContent.includes('관련 서식'));
+     if(forms)forms.innerHTML=`<h4>④ 관련 서식</h4>${lawObligationWorkbookHtml()}`;
+     [...drawer.querySelectorAll('.badge')].filter(el=>el.textContent.trim()==='연결 준비').forEach(el=>el.remove());
+   }
+ };
  window.safetyWorkflowUI=Object.freeze({flow,navigationState,ordered,timing});
  const statusUncached=statusOf;statusOf=function(t){if(!renderMemo)return statusUncached(t);if(!renderMemo.status.has(t))renderMemo.status.set(t,statusUncached(t));return renderMemo.status.get(t)};
  const displayUncached=taskDisplay;taskDisplay=function(t){if(!renderMemo)return displayUncached(t);if(!renderMemo.display.has(t))renderMemo.display.set(t,displayUncached(t));return renderMemo.display.get(t)};
  const renderUncached=render;render=function(...args){const previous=renderMemo;renderMemo={period:new WeakMap(),status:new WeakMap(),display:new WeakMap(),calendar:null};try{return renderUncached(...args)}finally{renderMemo=previous}};
  window.safetyWorkflowBootResolve?.();
+})();
+
+;
+/* Runtime: task-form-contract-integration.js */
+/* 업무번호 기반 서식 연동, 법령 확인상태, 도급사업별 자동 주기 일정 확장. */
+(()=>{
+ 'use strict';
+ const CONTRACT_CODES=new Set(['CNT-001','CNT-002','CNT-003']);
+ const explicitForms={
+  'CNT-001':['04-01-08:meeting'],
+  'CNT-002':['01-02-01'],
+  'CNT-003':['04-01-08:inspection']
+ };
+ const lawSeed={
+  'CNT-001':[
+   ['산업안전보건법','64','1','1'],
+   ['산업안전보건법 시행규칙','79','','']
+  ],
+  'CNT-002':[
+   ['산업안전보건법','64','1','2'],
+   ['산업안전보건법 시행규칙','80','','']
+  ],
+  'CNT-003':[
+   ['산업안전보건법','64','2',''],
+   ['산업안전보건법 시행규칙','82','','']
+  ]
+ };
+ const formTitle={
+  '01-02-01':'정기점검 실시 결과 보고',
+  '04-01-08:meeting':'안전보건협의체 회의록',
+  '04-01-08:inspection':'합동점검표',
+  '05-02-01':'안전보건 교육일지',
+  '06-02-01':'산업재해조사표',
+  '06-02-02':'중대재해 발생 보고',
+  '06-02-03':'재발방지 계획서'
+ };
+ function formIds(master){
+  if(!master)return [];
+  if(explicitForms[master.taskCode])return [...explicitForms[master.taskCode]];
+  const ids=[...String(master.relatedForms||'').matchAll(/\b\d{2}-\d{2}-\d{2}\b/g)].map(x=>x[0]);
+  return [...new Set(ids)];
+ }
+ function addLawSeeds(master){
+  const seeds=lawSeed[master.taskCode];if(!seeds)return;
+  master.legalReferences??=[];
+  for(const [lawName,article,paragraph,item] of seeds){
+   if(master.legalReferences.some(r=>r.lawName===lawName&&String(r.article||'')===article&&String(r.paragraph||'')===paragraph&&String(r.item||'')===item))continue;
+   master.legalReferences.push({refId:uuid(),kind:'law',lawName,lawId:'',serialId:'',article,branch:'',paragraph,item,subitem:'',sourceUrl:`https://www.law.go.kr/법령/${encodeURIComponent(lawName)}/제${article}조`,promulgationDate:'',effectiveDate:'',lastFetchedAt:'',reviewStatus:'candidate',provenance:'업무원장 명시 근거 · 법제처 API 원문 확인 필요'});
+  }
+ }
+ function enrichData(){
+  if(!app.data)return;
+  for(const m of app.data.taskMaster||[]){m.workId??=m.taskCode;m.formIds??=formIds(m);m.dueRule??={recurrenceType:m.recurrenceType||'',recurrenceInterval:Number(m.recurrenceInterval)||1,deadlineKind:m.deadlineKind||'management'};addLawSeeds(m)}
+  for(const t of app.data.tasks||[]){const m=app.data.taskMaster.find(x=>x.taskCode===(t.masterCode||t.taskCode));t.workId??=t.masterCode||t.taskCode||'';t.scheduleInstanceId??=t.id;t.formIds??=m?.formIds?[...m.formIds]:[];t.taskStatus??=t.completedByUser?'완료':'미완료';t.verificationStatus??=t.requiresReview?'needs_review':'confirmed'}
+ }
+ const migrateBefore=migrateMasterData;
+ migrateMasterData=function(...args){const result=migrateBefore(...args);enrichData();return result};
+ const taskBefore=masterToTask;
+ masterToTask=function(master,options){const t=taskBefore(master,options);t.workId=master.workId||master.taskCode;t.scheduleInstanceId=t.id;t.formIds=[...(master.formIds||formIds(master))];t.dueRule=JSON.parse(JSON.stringify(master.dueRule||{recurrenceType:master.recurrenceType||'',recurrenceInterval:Number(master.recurrenceInterval)||1,deadlineKind:master.deadlineKind||'management'}));t.taskStatus='미완료';return t};
+
+ const extraContractFields=[
+  ['contractId','도급사업 식별번호','text'],
+  ['industryRule','업종·주기 구분','select:확인 필요|일반 업종(주 1회·분기 1회)|건설업·제조업 등(2일 1회 순회점검)|건설업·선박 및 보트 건조업(2개월 1회 합동점검)'],
+  ['councilApplicable','안전보건협의체 적용','select:확인 필요|해당|비대상'],
+  ['patrolApplicable','도급 작업장 순회점검 적용','select:확인 필요|해당|비대상'],
+  ['jointApplicable','합동 안전·보건점검 적용','select:확인 필요|해당|비대상']
+ ];
+ for(const field of extraContractFields)if(!eventDefs.contract.fields.some(x=>x[0]===field[0]))eventDefs.contract.fields.push(field);
+
+ function contractPlans(event){
+  const v=event?.data||{},start=v.date||event?.date,end=v.endDate;
+  if(!validDay(start)||!validDay(end)||end<start||v.role!=='도급인'||v.contractExemption==='예')return [];
+  const common={applyStart:start,applyEnd:end,anchorDate:start,scheduleMode:'period'};
+  const plans=[];
+  if(v.councilApplicable==='해당')plans.push({code:'CNT-001',...common,recurrenceType:'monthly',recurrenceInterval:1,anchorDate:'',scheduleMode:'day',monthDay:1});
+  if(v.patrolApplicable==='해당'){const twoDay=/2일 1회/.test(v.industryRule||'');plans.push({code:'CNT-002',...common,recurrenceType:twoDay?'daily':'weekly',recurrenceInterval:twoDay?2:1,anchorDate:start,weekday:1})}
+  if(v.jointApplicable==='해당')plans.push({code:'CNT-003',...common,recurrenceType:/2개월 1회/.test(v.industryRule||'')?'customMonths':'quarterly',recurrenceInterval:/2개월 1회/.test(v.industryRule||'')?2:1,anchorDate:/2개월 1회/.test(v.industryRule||'')?start:''});
+  return plans;
+ }
+ function contractBusinessDue(start,end){
+  const custom=app.data.appSettings?.holidays||[];
+  const calendar=window.KoreanPublicHolidays;
+  if(start===end.slice(0,7)+'-01'&&end===monthEnd(end)&&calendar?.lastBusinessDay){
+   return calendar.lastBusinessDay(Number(end.slice(0,4)),Number(end.slice(5,7)),custom);
+  }
+  let day=end;
+  while(day>=start){
+   const closed=calendar?.isNonWorkingDay?calendar.isNonWorkingDay(day,custom):[0,6].includes(parseDay(day).getDay())||custom.includes(day);
+   if(!closed)return day;
+   day=addDays(day,-1);
+  }
+  // A contract period with no weekday needs a human scheduling decision.
+  return end;
+ }
+ function contractPlannedDate(plan,period){
+  if(plan.recurrenceType==='monthly')return period.planned;
+  const custom=app.data.appSettings?.holidays||[],calendar=window.KoreanPublicHolidays;
+  let day=period.planned;
+  while(day<=period.periodEnd){
+   const closed=calendar?.isNonWorkingDay?calendar.isNonWorkingDay(day,custom):[0,6].includes(parseDay(day).getDay())||custom.includes(day);
+   if(!closed)return day;
+   day=addDays(day,1);
+  }
+  return period.planned;
+ }
+ function contractDeadlineSource(label,due){
+  const year=Number(String(due).slice(0,4));
+  const checked=window.KoreanPublicHolidays?.hasFullYearData?.(year);
+  return label+' · 법정 제출기한 아님'+(checked?'':' · 해당 연도 공휴일 자료 확인 필요');
+ }
+ function syncContractSchedules(from,to){
+  if(!app.data)return 0;
+  const today=localToday(),view=isoDate(app.calendarDate),defaultTo=shiftMonths((today>view?today:view).slice(0,7)+'-01',24),suppressed=new Set(app.data.appSettings?.suppressed||[]),existing=new Map(app.data.tasks.filter(t=>t.occurrenceKey).map(t=>[t.occurrenceKey,t]));let count=0;
+  for(const event of app.data.triggerEvents.filter(e=>e.type==='contract')){
+   const v=event.data||{},contractId=(v.contractId||event.id).trim?.()||event.id;let eventCount=0;
+   for(const plan of contractPlans(event)){
+    const source=app.data.taskMaster.find(m=>m.taskCode===plan.code);if(!source)continue;
+    const m={...source,...plan,targetId:'contract:'+contractId,applicability:'yes',active:true,formIds:explicitForms[plan.code]||source.formIds||formIds(source)};
+    const rangeFrom=from&&from>plan.applyStart?from:plan.applyStart,rangeTo=[to||defaultTo,plan.applyEnd].sort()[0];if(rangeFrom>rangeTo)continue;
+    for(const p of recurrencePeriods(m,rangeFrom,rangeTo,app.data.appSettings?.holidays||[])){
+     const key=occurrenceKey(m,p.key);if(suppressed.has(key))continue;
+     const saved=existing.get(key);
+     const due=contractBusinessDue(p.periodStart,p.periodEnd),planned=contractPlannedDate(m,p);
+     if(saved){eventCount++;if(!saved.completedByUser&&!saved.userModified){if(planned>=today)saved.date=planned;saved.managementDue=due;saved.dueDate=due;saved.periodStart=p.periodStart;saved.periodEnd=p.periodEnd;saved.deadlineSource=contractDeadlineSource('주기 내 평일 이행관리 최종일',due)}continue}
+     const t=masterToTask(m,{date:planned,sourceEventId:event.id,requiresReview:false});
+     Object.assign(t,{id:'occ-'+key,scheduleInstanceId:'occ-'+key,occurrenceKey:key,contractSchedule:true,contractId,periodStart:p.periodStart,periodEnd:p.periodEnd,managementDue:due,originalDate:planned,originalDueDate:due,dueDate:due,deadlineKind:'management',deadlineSource:contractDeadlineSource('주기 내 평일 이행관리 최종일',due),recurrenceType:m.recurrenceType,recurrenceInterval:m.recurrenceInterval,recurrenceLabel:plan.code==='CNT-001'?'월 1회 이상':plan.code==='CNT-002'?(m.recurrenceInterval===2?'2일에 1회 이상':'1주일에 1회 이상'):(m.recurrenceType==='customMonths'?'2개월에 1회 이상':'분기 1회 이상'),targetId:m.targetId,forms:source.relatedForms,formIds:[...m.formIds],legalVerification:source.legalVerification||'법령 검증 필요',changes:[]});
+     app.data.tasks.push(t);app.syncChecklist(t);app.history(t.id,'도급사업 '+contractId+'의 적용 확인값으로 자동일정 생성');existing.set(key,t);eventCount++;count++;
+    }
+   }
+   event.autoScheduleCount=eventCount;event.applicabilityStatus=['councilApplicable','patrolApplicable','jointApplicable'].some(k=>v[k]==='확인 필요'||!v[k])?'적용 여부 확인 필요':'확인값 반영';
+  }
+  return count;
+ }
+ function syncContractCandidates(from,to){
+  if(!app.data)return 0;
+  const today=localToday(),view=isoDate(app.calendarDate),viewMonth=view.slice(0,7)+'-01';
+  const end=to||shiftMonths((today>view?today:view).slice(0,7)+'-01',24);
+  const suppressed=new Set(app.data.appSettings?.suppressed||[]),existing=new Map(app.data.tasks.filter(t=>t.contractScheduleCandidate).map(t=>[t.occurrenceKey,t]));
+  const patterns=[['CNT-001','monthly','월 1회 이상'],['CNT-002','weekly','주 1회 이상'],['CNT-003','quarterly','분기 1회 이상']];
+  let count=0;
+  for(const [code,recurrenceType,label] of patterns){
+   const source=app.data.taskMaster.find(m=>m.taskCode===code);
+   if(!source?.active||source.applicability==='no'||source.applicability==='yes')continue;
+   const firstOfPeriod=recurrenceType==='weekly'?monday(today):recurrenceType==='quarterly'?today.slice(0,4)+'-'+String(Math.floor((Number(today.slice(5,7))-1)/3)*3+1).padStart(2,'0')+'-01':today.slice(0,7)+'-01';
+   const start=from||(viewMonth<today.slice(0,7)+'-01'?viewMonth:firstOfPeriod);
+   const plan={...source,recurrenceType,recurrenceInterval:1,anchorDate:'',applyStart:recurrenceType==='weekly'?monday(start):start,applyEnd:'',scheduleMode:recurrenceType==='monthly'?'day':'period',monthDay:1,weekday:1};
+   for(const p of recurrencePeriods(plan,start,end,app.data.appSettings?.holidays||[])){
+    const key='contract-candidate|'+occurrenceKey(source,p.key);
+    if(suppressed.has(key))continue;
+    if(contractActualInPeriod(code,p))continue;
+    const due=contractBusinessDue(p.periodStart,p.periodEnd),planned=contractPlannedDate(plan,p),saved=existing.get(key);
+    if(saved){
+     if(!saved.userModified&&!saved.completedByUser){saved.date=planned;saved.dueDate=due;saved.managementDue=due;saved.periodStart=p.periodStart;saved.periodEnd=p.periodEnd;saved.deadlineSource=contractDeadlineSource('도급 적용 여부 확인 전 평일 이행관리 최종일',due)}
+     continue;
+    }
+    const t=masterToTask(source,{date:planned,dueDate:due,requiresReview:true});
+    Object.assign(t,{id:'occ-'+key,scheduleInstanceId:'occ-'+key,occurrenceKey:key,contractScheduleCandidate:true,periodStart:p.periodStart,periodEnd:p.periodEnd,managementDue:due,originalDate:planned,originalDueDate:due,dueDate:due,deadlineKind:'management',deadlineSource:contractDeadlineSource('도급 적용 여부 확인 전 평일 이행관리 최종일',due),recurrenceType,recurrenceInterval:1,recurrenceLabel:label,targetId:'school-default',target:'도급 사업장 · 적용 여부 확인',description:source.description+'\n도급인 지위와 관계수급인 근로자의 실제 작업 여부를 확인한 뒤 적용하세요. 해당 도급사업을 등록하면 계약별 일정으로 관리합니다.',memo:'도급사업 등록 전 적용 여부 확인용 일정입니다. 도급관계가 없으면 법정 의무로 보지 않습니다.',formIds:[...source.formIds],alertDays:'',changes:[]});
+    app.data.tasks.push(t);app.syncChecklist(t);existing.set(key,t);count++;
+   }
+  }
+  return count;
+ }
+ function contractActualInPeriod(code,p){
+  return app.data.tasks.some(t=>t.masterCode===code&&!t.contractScheduleCandidate&&(t.contractSchedule||t.sourceEventId||t.targetId==='school-default')&&(t.periodStart||t.date||'9999')<=p.periodEnd&&(t.periodEnd||t.date||'0000')>=p.periodStart);
+ }
+ function alignMonthlySchedules(){
+  for(const m of app.data.taskMaster||[]){
+   if(m.taskCode==='CHK-002'&&m.active&&m.applicability==='yes'&&m.recurrenceType==='monthly'&&m.scheduleMode==='lastBusiness'){
+    m.scheduleMode='day';m.monthDay=1;
+   }
+  }
+  for(const t of app.data.tasks||[]){
+   const m=app.data.taskMaster.find(x=>x.taskCode===t.masterCode);
+   if(t.masterCode!=='CHK-002'||!m?.active||m.applicability!=='yes'||m.recurrenceType!=='monthly'||m.scheduleMode!=='day'||Number(m.monthDay)!==1||t.contractSchedule||t.contractScheduleCandidate||t.sourceEventId||t.userModified||t.completedByUser||!validDay(t.periodStart)||!validDay(t.periodEnd))continue;
+   const scheduled=t.periodStart.slice(0,7)+'-01',due=contractBusinessDue(t.periodStart,t.periodEnd);
+   if(t.date!==scheduled||t.dueDate!==due){
+    t.changes??=[];t.changes.push({at:new Date().toISOString(),before:{date:t.date,dueDate:t.dueDate},after:{date:scheduled,dueDate:due},reason:'월간 일정일과 평일 관리마감 규칙 반영'});
+    t.date=scheduled;t.dueDate=due;t.managementDue=due;t.deadlineKind='management';
+   }
+   t.deadlineSource=contractDeadlineSource('월간 주기 내 평일 이행관리 최종일',due);
+  }
+ }
+ const ensureBefore=ensureSchedules;
+ ensureSchedules=function(...args){alignMonthlySchedules();const base=ensureBefore(...args);enrichData();alignMonthlySchedules();return base+syncContractSchedules(...args)+syncContractCandidates(...args)};
+ const visibleBeforeContract=visibleSchedule;
+ visibleSchedule=function(t,...args){if(t.contractScheduleCandidate&&!t.completedByUser&&contractActualInPeriod(t.masterCode,{periodStart:t.periodStart,periodEnd:t.periodEnd}))return false;return visibleBeforeContract(t,...args)};
+ const taskDateBeforeContract=taskDate;
+ taskDate=function(t){return t.contractScheduleCandidate?t.date:taskDateBeforeContract(t)};
+ const statusBeforeContract=statusOf;
+ statusOf=function(t){return t.contractScheduleCandidate&&!t.completedByUser?'확인필요':statusBeforeContract(t)};
+ const timingBeforeContract=performanceTimingHtml;
+ performanceTimingHtml=function(t){
+  const monthlyReport=t.masterCode==='CHK-002'&&t.periodStart&&t.periodEnd&&t.dueDate;
+  if(!t.contractSchedule&&!t.contractScheduleCandidate&&!monthlyReport)return timingBeforeContract(t);
+  const due=t.dueDate||t.managementDue||'';
+  const periodLabel=monthlyReport?'업무 수행기간':'점검·수행기간';
+  return `<span class="performance-range">${periodLabel}: ${escapeHtml(t.periodStart||'확인 필요')} ~ ${escapeHtml(t.periodEnd||'확인 필요')}</span><span class="performance-remaining"><b>관리상 최종일 ${escapeHtml(due||'확인 필요')}</b> · ${t.completedByUser?'완료':escapeHtml(dDay(due))}</span><small>${escapeHtml(t.deadlineSource||'주기 내 이행을 위한 관리 일정 · 법정 제출기한 아님')}</small>`;
+ };
+ const eventFormBefore=openEventForm;
+ openEventForm=function(kind){
+  eventFormBefore(kind);if(kind!=='contract')return;
+  const form=document.getElementById('eventForm');if(!form)return;
+  form.querySelector('[name="endDate"]')?.setAttribute('required','');
+  form.querySelector('[name="role"]')?.setAttribute('required','');
+  for(const code of CONTRACT_CODES)form.querySelector(`[name="selectedCodes"][value="${code}"]`)?.closest('label')?.remove();
+  form.insertAdjacentHTML('afterend','<div class="notice" style="margin-top:12px">세 의무는 위 적용 여부를 <b>해당</b>으로 확인한 경우에만 사업별·주기별 자동 생성됩니다. 확인 필요 또는 비대상은 무조건 일정으로 만들지 않습니다.</div>');
+ };
+ const submitBefore=submitEvent;
+ submitEvent=async function(){const form=document.getElementById('eventForm'),kind=form?.dataset.kind;if(kind==='contract'){const start=form.querySelector('[name="date"]')?.value,end=form.querySelector('[name="endDate"]')?.value;if(start&&end&&end<start){toast('도급사업 종료일은 시작일 이후여야 합니다.');return}}await submitBefore();if(kind==='contract'){const added=syncContractSchedules();await app.save();render();if(added)toast('적용 확인된 도급업무 자동일정 '+added+'건을 생성했습니다.')}};
+
+ function taskMaster(t){return app.data.taskMaster.find(m=>m.taskCode===(t?.masterCode||t?.taskCode))}
+ function payloadFor(t,formId){
+  const m=taskMaster(t),school=suiteData().school||{},period=t.periodStart&&t.periodEnd?`${t.periodStart} ~ ${t.periodEnd}`:'';
+  const scheduled=t.date||localToday();
+  return {formId,workId:t.workId||m?.taskCode||'',scheduleInstanceId:t.scheduleInstanceId||t.id,prefill:{schoolName:school.name==='○○학교'?'':school.name,inspectorName:school.owner||t.responsible||'',docDate:scheduled,inspectionDate:scheduled,meetingDate:scheduled,eduDate:scheduled,occurDate:scheduled,hireDate:scheduled,dateTime:scheduled,dates:{1:scheduled},targetPeriod:period,taskName:taskDisplay(t).title,workName:taskDisplay(t).title,taskDetails:t.description||'',managementDue:t.managementDue||'',contractorCompany:app.data.triggerEvents.find(e=>e.id===t.sourceEventId)?.data?.company||''}};
+ }
+ function legalQuestion(t){const m=taskMaster(t),refs=(m?.legalReferences||[]).map(r=>`${r.lawName} 제${r.article}조${r.paragraph?' 제'+r.paragraph+'항':''}${r.item?' 제'+r.item+'호':''}`).join(', ');return `[업무번호 ${t.workId||m?.taskCode||'미지정'}] ${taskDisplay(t).title}에 대해 설명해 주세요.\n업무 내용: ${t.description||m?.description||'미입력'}\n실시주기·관리기간: ${t.recurrenceLabel||m?.recurrenceLabel||'확인 필요'} / ${t.periodStart||'미지정'}~${t.periodEnd||'미지정'}\n이행관리 최종일: ${t.managementDue||'미지정'}\n업무원장 법령 후보: ${refs||m?.sourceArticle||'연결 근거 확인 필요'}\n관련 서식: ${(t.formIds||m?.formIds||[]).join(', ')||'연결 서식 없음'}\n법령 원문, 교육청 지침, AI 설명을 구분하고 수행 이유·수행 주체·주기·관련 조항·주의사항을 알려 주세요.`}
+ const openTaskBefore=openTask;
+ openTask=function(id){
+  openTaskBefore(id);
+  const t=app.data.tasks.find(x=>x.id===id),drawer=document.querySelector('.drawer-body');
+  if(!t||!drawer||drawer.closest('.incident-task-drawer'))return;
+  const overview=[...drawer.querySelectorAll('.detail-section')].find(s=>s.querySelector('h4')?.textContent.includes('이번에 해야 할 일'));
+  if(!overview)return;
+  const m=taskMaster(t),workbookOnly=!!m&&usesLawObligationWorkbook(t,m,taskDisplay(t));
+  const forms=[...drawer.querySelectorAll('.detail-section')].find(s=>s.querySelector('h4')?.textContent.includes('관련 서식'));
+  if(m){
+   t.workId??=m.taskCode;t.scheduleInstanceId??=t.id;t.formIds??=m.formIds||formIds(m);
+   if(forms&&!workbookOnly){forms.innerHTML=`<h4>④ 관련 서식</h4>${t.formIds.length?t.formIds.map(fid=>`<div class="linked-form-row"><strong>${escapeHtml(formTitle[fid]||fid)}</strong><small>서식 ID ${escapeHtml(fid)} · 업무 ID ${escapeHtml(t.workId)}</small><button class="btn primary" data-open-linked-form="${escapeHtml(t.id)}" data-form-id="${escapeHtml(fid)}">서식 자동작성</button></div>`).join(''):'<p class="notice">연결 서식 없음 · 서식 매칭 필요</p>'}<p class="subtle">선택한 일정의 학교명·점검일·대상기간·담당자를 서식에 전달합니다. 서식 저장 이력은 이 일정에 기록됩니다.</p>`}
+   const verify=t.legalVerificationStatus==='confirmed';
+   drawer.insertAdjacentHTML('beforeend',`<section class="detail-section task-integration"><h4>업무 연계와 확인 상태</h4>${t.contractSchedule?`<p><b>도급사업 ID:</b> ${escapeHtml(t.contractId)}<br><b>실시 예정일:</b> ${escapeHtml(t.date)}<br><b>법정주기 이행관리기한:</b> ${escapeHtml(t.managementDue)} · ${escapeHtml(dDay(t.managementDue))}<br><small>주기 내 이행을 위한 관리상 최종일이며 법정 제출기한이 아닙니다.</small></p>`:''}<p><b>법령·지침 근거:</b> ${verify?'담당자 확인':'미확인'} · <b>업무:</b> ${t.completedByUser?'완료':'미완료'}</p><div class="law-actions"><button class="btn primary" data-ask-task="${escapeHtml(t.id)}">AI에게 법령·업무 문의</button><button class="btn" data-confirm-task-legal="${escapeHtml(t.id)}" ${verify?'disabled':''}>${verify?'근거 확인 완료':'법령·지침 근거 확인'}</button></div>${(t.linkedFormDocuments||[]).length?'<p class="subtle">저장된 연결 문서 '+t.linkedFormDocuments.length+'건 · 최근 '+escapeHtml(new Date(t.linkedFormDocuments.at(-1).savedAt).toLocaleString('ko-KR'))+'</p>':''}</section>`);
+  }
+  // The task description is the trigger: preserve linked forms for other work.
+  const actionText=[...overview.querySelectorAll('.task-overview-sub strong,.task-overview-actions li')].map(el=>el.textContent).join(' ');
+  const inspectionTask=/점검(?:표)?\s*(?:실시|수행|진행|작성)/.test(actionText);
+  if(inspectionTask&&forms){
+   const sub=overview.querySelector('.task-overview-sub');
+   const target=sub||overview;
+   const actions=document.createElement('div');
+   actions.className='task-overview-form-actions';
+   if(workbookOnly){
+    const workbook=forms.querySelector('[data-law-workbook-download]');
+    if(workbook){workbook.textContent='점검표 엑셀 다운로드';actions.append(workbook)}
+   }else{
+    for(const fid of Array.isArray(t.formIds)?t.formIds:[]){
+     const button=document.createElement('button');
+     button.className='btn primary';
+     button.type='button';
+     button.textContent='서식 자동작성';
+     button.dataset.openLinkedForm=t.id;
+     button.dataset.formId=fid;
+     button.setAttribute('aria-label',`${formTitle[fid]||fid} 서식 자동작성`);
+     if(t.formIds.length>1){const item=document.createElement('span');item.className='task-overview-form-item';const label=document.createElement('small');label.textContent=formTitle[fid]||fid;item.append(label,button);actions.append(item)}
+     else actions.append(button);
+    }
+   }
+   if(actions.childElementCount){if(sub){sub.classList.add('has-form-actions');target.append(actions)}else overview.querySelector('h4')?.after(actions)}
+   forms.remove();
+  }
+  // These sections duplicate the work summary or require checklist steps that are no longer shown.
+  for(const section of [...drawer.querySelectorAll('.detail-section')]){
+   const heading=section.querySelector('h4')?.textContent.trim().replace(/^[0-9①-⑳]+\s*/, '')||'';
+   if(['일정 및 마감일','반복 회차와 기한 구분','업무 처리 체크리스트','필수 체크리스트'].includes(heading))section.remove();
+  }
+  const complete=drawer.querySelector('[data-complete]');
+  if(complete){complete.disabled=false;complete.textContent='업무 완료';complete.setAttribute('data-checklist-free','')}
+  const hasFormSection=!!forms?.isConnected;
+  const source=[...drawer.querySelectorAll('.detail-section')].find(s=>s.querySelector('h4')?.textContent.includes('업무 근거'));
+  if(source)source.querySelector('h4').textContent=`${hasFormSection?'④':'③'} 업무 근거`;
+  const history=[...drawer.querySelectorAll('.detail-section')].find(s=>s.querySelector('h4')?.textContent.includes('처리 이력'));
+  if(history)history.querySelector('h4').innerHTML=`<span class="num">${hasFormSection?'5':'4'}</span>처리 이력`;
+  const completionHeading=[...drawer.querySelectorAll('h4')].find(h=>h.textContent.includes('완료 처리'));
+  if(completionHeading)completionHeading.textContent=`${hasFormSection?'⑥':'⑤'} 완료 처리`;
+  if(hasFormSection)forms.querySelector('h4').textContent='③ 관련 서식';
+ };
+ function isChatScheduleTask(t){return !!(t?.chatDraftId||t?.source?.type==='챗봇 후속업무 제안')}
+ function chatScheduleMemo(t){
+  return String(t?.memo||t?.description||'')
+   .split(/\n\n(?:챗봇 원 질문:|답변에서 제시한 참고 근거|이 일정은 사용자가 지정한 내부 업무 계획입니다\.)/u)[0]
+   .trim();
+ }
+ function openChatScheduleTask(t){
+  const memo=chatScheduleMemo(t),state=t.completedByUser?'완료':'예정';
+  document.getElementById('overlay').innerHTML=`<div class="drawer-wrap" data-close-overlay><aside class="drawer"><div class="drawer-head"><div><span class="kicker">일정 상세</span><h3 style="margin:4px 0 0">일정 확인</h3></div><button class="close" data-close aria-label="닫기">×</button></div><div class="drawer-body"><h2 class="detail-title">${escapeHtml(t.name||'제목 없는 일정')}</h2><div class="detail-badges">${statusBadge(state)}${typeBadge('개인')}</div><div class="drawer-summary"><div class="summary-cell"><span>대상</span><strong>${escapeHtml(t.target||'미지정')}</strong></div><div class="summary-cell"><span>일정일</span><strong>${fmtDate(t.date)}</strong></div></div>${memo?`<div class="detail-section"><h4>메모</h4><p>${escapeHtml(memo)}</p></div>`:''}<div class="detail-actions"><button class="btn" data-edit-task="${escapeHtml(t.id)}">일정 수정</button>${t.completedByUser?`<button class="btn" data-reopen="${escapeHtml(t.id)}">완료 취소</button>`:`<button class="btn primary" data-complete="${escapeHtml(t.id)}">일정 완료</button>`}<button class="btn danger" data-delete-task="${escapeHtml(t.id)}">일정 삭제</button></div></div></aside></div>`;
+ }
+ const openTaskBeforeChatSchedule=openTask;
+ openTask=function(id){const t=app.data.tasks.find(x=>x.id===id);if(isChatScheduleTask(t))return openChatScheduleTask(t);return openTaskBeforeChatSchedule(id)};
+ const openTaskEditBeforeChatSchedule=openTaskEdit;
+ openTaskEdit=function(id){
+  const t=app.data.tasks.find(x=>x.id===id);if(!isChatScheduleTask(t))return openTaskEditBeforeChatSchedule(id);
+  modal('일정 수정',`<form id="taskEdit" class="form-grid" data-id="${escapeHtml(id)}"><div class="field full"><label>일정명</label><input name="name" value="${escapeHtml(t.name||'')}" required></div><div class="field"><label>일정일</label><input type="date" name="date" value="${escapeHtml(t.date||'')}"></div><div class="field"><label>대상</label><input name="target" value="${escapeHtml(t.target||'')}"></div><div class="field full"><label>메모</label><textarea name="memo">${escapeHtml(chatScheduleMemo(t))}</textarea></div></form>`,`<button class="btn" data-close>취소</button><button class="btn primary" data-save-task>저장</button>`);
+ };
+ window.addEventListener('click',async e=>{
+  const formButton=e.target.closest('[data-open-linked-form]');if(formButton){e.preventDefault();e.stopImmediatePropagation();const t=app.data.tasks.find(x=>x.id===formButton.dataset.openLinkedForm);if(!t)return;window.safetyModuleIntegration?.openForm(payloadFor(t,formButton.dataset.formId));return}
+  const ask=e.target.closest('[data-ask-task]');if(ask){e.preventDefault();e.stopImmediatePropagation();const t=app.data.tasks.find(x=>x.id===ask.dataset.askTask);if(!t)return;window.safetyModuleIntegration?.openChatbot({workId:t.workId||t.masterCode,scheduleInstanceId:t.id,question:legalQuestion(t)});return}
+  const confirmButton=e.target.closest('[data-confirm-task-legal]');if(confirmButton){e.preventDefault();e.stopImmediatePropagation();const t=app.data.tasks.find(x=>x.id===confirmButton.dataset.confirmTaskLegal);if(!t)return;t.legalVerificationStatus='confirmed';t.legalVerifiedAt=new Date().toISOString();app.history(t.id,'담당자가 법령·지침 근거 확인');await app.save();openTask(t.id);toast('이 일정의 근거 확인 상태를 저장했습니다.')}
+ },true);
+ window.safetyTaskIntegration=Object.freeze({
+  onFormSaved:async message=>{const t=app.data.tasks.find(x=>x.id===message.scheduleInstanceId);if(!t)return;t.linkedFormDocuments??=[];if(!t.linkedFormDocuments.some(x=>x.documentId===message.documentId&&x.formId===message.formId))t.linkedFormDocuments.push({formId:message.formId,documentId:message.documentId,title:message.title,savedAt:message.savedAt||new Date().toISOString()});app.history(t.id,'연결 서식 저장 · '+(message.formId||''));await app.save();toast('작성한 서식을 일정 이력에 연결했습니다.')},
+  payloadFor,formIds,contractPlans,syncContractSchedules,syncContractCandidates,contractBusinessDue
+ });
+ window.safetyWorkIntegration=window.safetyTaskIntegration;
 })();
 
 ;

@@ -64,6 +64,7 @@ export type SearchResponse = {
   topic?: "risk" | "msds" | "contractor";
   answerMode?: "gpt" | "search";
   model?: string;
+  lawVerification?: { status: "verified" | "unavailable"; reason?: string };
 };
 
 const CATEGORY_TERMS: Record<string, string[]> = {

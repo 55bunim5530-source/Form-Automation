@@ -5,6 +5,16 @@ import { generateApprovalBody } from '../src/services/approvalBody.js';
 import { inspectionApproval } from '../src/services/approvalInspections.js';
 import { educationApproval } from '../src/services/approvalEducation.js';
 import { incidentApproval } from '../src/services/approvalIncidents.js';
+import { FORM_TIMING_OPTIONS, getFormOptionLabel } from '../src/forms/formTiming.js';
+
+test('form selector appends the official form number to every displayed name', () => {
+  assert.equal(FORM_TIMING_OPTIONS.length, 20);
+  assert.equal(new Set(FORM_TIMING_OPTIONS.map(option => option.formCode)).size, 19);
+  for (const option of FORM_TIMING_OPTIONS) {
+    assert.equal(getFormOptionLabel(option), `${option.title} (${option.formCode})`);
+    assert.match(getFormOptionLabel(option), / \(\d{2}-\d{2}-\d{2}\)$/);
+  }
+});
 
 test('all 19 forms have a specific template, sequential numbered items and plain text', () => {
   for (const code of Object.keys(FORM_METAS)) {

@@ -92,6 +92,10 @@ export const FORM_TIMING_OPTIONS = FORM_TIMING_GROUPS.flatMap(group =>
   group.options.map(option => ({ ...option, groupLabel: group.label }))
 );
 
+export function getFormOptionLabel(option) {
+  return `${option.title} (${option.formCode})`;
+}
+
 export function getFormSelectionValue(formCode, data = {}) {
   if (formCode === '04-01-08') {
     return `${formCode}:${data?.docType === 'inspection' ? 'inspection' : 'meeting'}`;

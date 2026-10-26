@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { searchManual, type ConversationContext, type SearchResponse } from "@/features/chatbot/lib/manual-search";
+import { searchManual, type ConversationContext, type Evidence, type SearchResponse } from "@/features/chatbot/lib/manual-search";
+import schoolManual from "@/features/chatbot/data/manual-pages.json";
 
 type OpenAIResponse = {
   output_text?: string;
@@ -15,6 +16,125 @@ const VALID_INTENTS = new Set<NonNullable<ConversationContext["intent"]>>([
   "emergency", "application", "procedure", "frequency", "duration", "retention", "eligibility", "comparison", "location", "general",
 ]);
 const requestBuckets = new Map<string, { startedAt: number; count: number }>();
+
+type VerifiedLaw = {
+  lawName: string;
+  article: string;
+  excerpt: string;
+  effectiveDate: string;
+  fetchedAt: string;
+  sourceUrl: string;
+  sourceTitle: string;
+};
+
+type LawContext = { status: "verified" | "unavailable"; laws: VerifiedLaw[]; reason?: string };
+
+const LEGAL_SCOPE = /(?:법령|법정|법률|법적|법에\s*따라|산업안전보건법|중대재해처벌법|제\s*\d+\s*조|시행령|시행규칙|고시|의무|적용\s*대상|기한|주기|반기|연간|매년|몇\s*(?:회|번|년|개월|시간)|얼마나\s*자주|언제까지|언제\s*해야|며칠\s*(?:내|이내)|과태료)/u;
+const UNVERIFIED_RULE = /(?:법령|법정|법률|법적|시행령|시행규칙|고시|의무|적용\s*대상|기한|주기|반기|연간|매년|보존|(?:\d+(?:\.\d+)?\s*(?:년|개월|일|시간|회)(?:간|마다|이내)?)|(?:연|월|주)\s*\d+\s*회|\d+\s*\/\s*\d+|\d+\s*%)/u;
+
+function exactEducationFormAnswer(question: string): SearchResponse | null {
+  if (!/안전보건\s*교육일지/u.test(question) || !/(?:서식|작성|찾|어디|다운로드)/u.test(question)) return null;
+  const page = schoolManual.pages.find((item) => item.pdfPage === 75 && item.section === "서식과 참고자료 목록");
+  if (!page || !page.text.includes("안전보건교육일지")) return null;
+  return {
+    status: "found",
+    message: "서울특별시교육청 산업안전보건업무 매뉴얼 부록에 안전보건교육일지가 수록되어 있습니다 [근거 1].",
+    keyPoints: [{ text: "작성 전에 해당 서식의 최신 안내를 확인하세요.", evidenceIds: [1] }],
+    sourceTitle: schoolManual.sourceTitle,
+    sourceDate: schoolManual.sourceDate,
+    evidence: [{
+      pdfPage: page.pdfPage,
+      referenceLabel: page.referenceLabel,
+      section: page.section,
+      excerpt: page.text,
+      sourceTitle: schoolManual.sourceTitle,
+      sourceDate: schoolManual.sourceDate,
+      url: schoolManual.sourceUrl,
+    }],
+    context: { question, category: "forms", evidenceSections: [page.section], intent: "procedure" },
+  };
+}
+
+function isOfficialLawUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname === "law.go.kr" || url.hostname.endsWith(".law.go.kr"));
+  } catch { return false; }
+}
+
+function readLawContext(value: unknown): LawContext {
+  const unavailable = (reason: string): LawContext => ({ status: "unavailable", laws: [], reason });
+  if (!value || typeof value !== "object") return unavailable("법제처 API 원문을 확인하지 못했습니다.");
+  const candidate = value as Record<string, unknown>;
+  if (candidate.status !== "verified" || !Array.isArray(candidate.laws) || candidate.laws.length === 0 || candidate.laws.length > 2) {
+    return unavailable(typeof candidate.reason === "string" ? candidate.reason.slice(0, 180) : "법제처 API 원문을 확인하지 못했습니다.");
+  }
+  const laws: VerifiedLaw[] = [];
+  for (const row of candidate.laws) {
+    if (!row || typeof row !== "object") return unavailable("법제처 API 응답 형식이 올바르지 않습니다.");
+    const law = row as Record<string, unknown>;
+    if (typeof law.lawName !== "string" || !law.lawName.trim() || law.lawName.length > 120 ||
+        typeof law.article !== "string" || !/^\d{1,4}$/u.test(law.article) ||
+        typeof law.excerpt !== "string" || !law.excerpt.trim() || law.excerpt.length > 10000 ||
+        typeof law.effectiveDate !== "string" || !/^\d{4}[-.]?\d{2}[-.]?\d{2}$/u.test(law.effectiveDate) ||
+        typeof law.fetchedAt !== "string" || !Number.isFinite(Date.parse(law.fetchedAt)) ||
+        Math.abs(Date.now() - Date.parse(law.fetchedAt)) > 60 * 60 * 1000 ||
+        typeof law.sourceUrl !== "string" || !isOfficialLawUrl(law.sourceUrl) ||
+        typeof law.sourceTitle !== "string" || law.sourceTitle.length > 160) {
+      return unavailable("법제처 API 원문 검증 정보가 누락되거나 오래되었습니다.");
+    }
+    laws.push(law as VerifiedLaw);
+  }
+  return { status: "verified", laws };
+}
+
+function withLawEvidence(question: string, result: SearchResponse, context: LawContext): SearchResponse {
+  if (!LEGAL_SCOPE.test(question)) {
+    // A procedural search result can still contain a deadline or recurrence
+    // copied from a manual. Do not present that as a current legal rule when
+    // the question did not trigger an official-law lookup.
+    const unrelatedTopic = (statement: string) =>
+      /교육/u.test(question) && !/위험성평가/u.test(question) && /위험성평가/u.test(statement)
+      || /위험성평가/u.test(question) && !/교육/u.test(question) && /안전보건교육|교육시간/u.test(statement);
+    const safePoints = result.keyPoints.filter((point) => !UNVERIFIED_RULE.test(point.text) && !unrelatedTopic(point.text));
+    const safeSentences = result.message.split(/(?<=[.!?])\s+/u).filter((sentence) => !UNVERIFIED_RULE.test(sentence) && !unrelatedTopic(sentence));
+    if (safePoints.length === result.keyPoints.length && safeSentences.length === result.message.split(/(?<=[.!?])\s+/u).length) return result;
+    return {
+      ...result,
+      message: safeSentences.join(" ").trim() || "기존 근거자료에서 관련 업무 내용을 찾았습니다. 법정 기한·대상·주기는 공식 법령 원문 확인 전에는 확정하지 않습니다.",
+      keyPoints: safePoints,
+      lawVerification: { status: "unavailable", reason: "질문에 법령 조회가 포함되지 않아 수치·주기 주장을 제외했습니다." },
+    };
+  }
+  if (context.status !== "verified") {
+    return {
+      ...result,
+      message: "국가법령정보센터 API 원문을 확인하지 못했습니다. 아래 기존 근거자료는 업무 이해를 위한 참고로만 확인해 주세요. 적용 대상·법정 기한·반복 주기는 이 답변에서 확정하지 않으며, API 연결 후 원문과 해당 학교의 조건을 확인해야 합니다.",
+      keyPoints: [],
+      lawVerification: { status: "unavailable", reason: context.reason },
+    };
+  }
+  const official: Evidence[] = context.laws.map((law) => ({
+    pdfPage: 0,
+    referenceLabel: "국가법령정보센터 API 원문",
+    section: `${law.lawName} 제${law.article}조`,
+    excerpt: law.excerpt,
+    sourceTitle: law.sourceTitle,
+    sourcePublisher: "법제처 국가법령정보센터",
+    sourceDate: law.effectiveDate,
+    url: law.sourceUrl,
+  }));
+  return {
+    ...result,
+    // A retrieved article alone does not prove this school's applicability or
+    // calculate a deadline. Show both sources; the LLM may answer only when its
+    // sentence-level citations pass the checks below.
+    message: "국가법령정보센터 API에서 관련 조문 원문을 확인했습니다. 아래 API 원문과 기존 근거자료를 함께 검토해 주세요. 이 학교의 적용 여부와 실제 일정일은 별도 확인이 필요합니다.",
+    keyPoints: [],
+    evidence: [...result.evidence, ...official],
+    lawVerification: { status: "verified" },
+  };
+}
 
 function clientKey(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -60,9 +180,11 @@ function normalizedTokens(value: string): string[] {
 function hasValidSentenceCitations(message: string, evidence: SearchResponse["evidence"]): boolean {
   const sentences = message.match(/[^.!?\n]+(?:[.!?]|$)/gu)?.map((sentence) => sentence.trim()).filter((sentence) => sentence.length >= 5) ?? [];
   if (!sentences.length) return false;
+  const officialIds = new Set(evidence.flatMap((item, index) => item.sourcePublisher === "법제처 국가법령정보센터" ? [index + 1] : []));
   return sentences.every((sentence) => {
     const citations = [...sentence.matchAll(/\[근거\s+(\d+)\]/gu)].map((match) => Number(match[1]));
     if (!citations.length || citations.some((id) => !Number.isInteger(id) || id < 1 || id > evidence.length)) return false;
+    if (officialIds.size > 0 && LEGAL_SCOPE.test(sentence) && !citations.some((id) => officialIds.has(id))) return false;
     const citedText = citations.map((id) => evidence[id - 1].excerpt).join(" ").toLowerCase().normalize("NFKC");
     const numbers = sentence.replace(/\[근거\s+\d+\]/gu, "").match(/\d+(?:[.,]\d+)?/gu) ?? [];
     if (numbers.some((number) => !citedText.includes(number))) return false;
@@ -99,6 +221,7 @@ async function createGroundedAnswer(
   searchResult: SearchResponse,
 ): Promise<SearchResponse> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (searchResult.lawVerification?.status === "unavailable") return { ...searchResult, answerMode: "search" };
   if (!apiKey || searchResult.status !== "found" || searchResult.evidence.length === 0) {
     return { ...searchResult, answerMode: "search" };
   }
@@ -186,6 +309,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "질문은 1~500자로 입력해 주세요." }, { status: 400 });
   }
   const previousContext = conversationContextFrom(body as Record<string, unknown>);
-  const searchResult = searchManual(question, previousContext);
-  return NextResponse.json(await createGroundedAnswer(question, previousContext, searchResult));
+  const searchResult = exactEducationFormAnswer(question) ?? searchManual(question, previousContext);
+  const lawContext = readLawContext((body as Record<string, unknown>).lawContext);
+  const groundedResult = withLawEvidence(question, searchResult, lawContext);
+  return NextResponse.json(await createGroundedAnswer(question, previousContext, groundedResult));
 }

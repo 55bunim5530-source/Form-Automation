@@ -4,6 +4,7 @@ const path = require('path');
 const https = require('https');
 const { execFile } = require('child_process');
 const os = require('os');
+const { renderPdf, PdfRenderError } = require('./pdf-download');
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -502,6 +503,67 @@ const server = http.createServer((req, res) => {
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+      }
+    });
+    return;
+  }
+
+  // Render the existing MSDS print template as a directly downloadable PDF.
+  if (parsedReqUrl.pathname === '/api/render-pdf' && req.method === 'POST') {
+    const msdsOrigins = new Set([`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`]);
+    const sendPdfError = (status, message) => {
+      if (res.headersSent || res.writableEnded) return;
+      res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: message }));
+    };
+    if (!msdsOrigins.has(requestOrigin)) {
+      sendPdfError(403, 'MSDS 화면에서만 PDF를 생성할 수 있습니다.');
+      req.resume();
+      return;
+    }
+    if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
+      sendPdfError(415, 'PDF 요청 형식은 JSON이어야 합니다.');
+      req.resume();
+      return;
+    }
+
+    const chunks = [];
+    let bodySize = 0;
+    let tooLarge = false;
+    req.on('data', chunk => {
+      if (tooLarge) return;
+      bodySize += chunk.length;
+      if (bodySize > MAX_REQUEST_BYTES) {
+        tooLarge = true;
+        sendPdfError(413, 'PDF 내용이 너무 큽니다.');
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('error', () => sendPdfError(400, 'PDF 요청을 읽지 못했습니다.'));
+    req.on('end', async () => {
+      if (tooLarge || res.writableEnded) return;
+      let payload;
+      try {
+        payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      } catch (_) {
+        sendPdfError(400, 'PDF 요청 내용을 읽을 수 없습니다.');
+        return;
+      }
+      try {
+        const pdf = await renderPdf(payload || {});
+        if (res.writableEnded) return;
+        res.writeHead(200, {
+          'Content-Type': 'application/pdf',
+          'Content-Length': pdf.length,
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff'
+        });
+        res.end(pdf);
+      } catch (error) {
+        const status = error instanceof PdfRenderError ? error.statusCode : 500;
+        if (!(error instanceof PdfRenderError)) console.error('MSDS PDF request failed:', error);
+        sendPdfError(status, error instanceof PdfRenderError ? error.message : 'PDF 생성 중 오류가 발생했습니다.');
       }
     });
     return;

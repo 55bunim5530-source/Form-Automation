@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText } from 'lucide-react';
 import Header from './components/Header';
 import DocumentList from './components/DocumentList';
@@ -40,6 +40,7 @@ const today = () => {
 };
 
 export default function App() {
+  const acceptedMessageIdsRef = useRef(new Set());
   const [activeFormCode, setActiveFormCode] = useState('01-02-01');
   const [formData, setFormData] = useState({});
   const [activeDoc, setActiveDoc] = useState(null);
@@ -136,7 +137,49 @@ export default function App() {
     const defaults = getDefaultSettings();
     setDefaultSettingsState(defaults);
     replaceFormData(applyDefaultsToForm({}, defaults));
+    if (window.parent !== window) window.parent.postMessage({ type: 'safety:module-ready', module: 'forms' }, '*');
   }, []);
+
+  useEffect(() => {
+    const receiveIntegratedTask = (event) => {
+      if (event.source !== window.parent || event.data?.type !== 'safety:open-form') return;
+      const messageId = String(event.data.messageId || '');
+      if (messageId) {
+        window.parent.postMessage({ type: 'safety:message-accepted', module: 'forms', messageId }, '*');
+        if (acceptedMessageIdsRef.current.has(messageId)) return;
+        acceptedMessageIdsRef.current.add(messageId);
+      }
+      const selection = resolveFormSelection(event.data.formId);
+      if (!selection) {
+        setNotice({ message: `연결된 서식(${event.data.formId || '미지정'})을 찾지 못했습니다.`, type: 'error' });
+        return;
+      }
+      const open = () => {
+        setActiveFormCode(selection.formCode);
+        setActiveDoc(null);
+        replaceFormData(applyDefaultsToForm({
+          ...(selection.docType ? { docType: selection.docType } : {}),
+          ...(event.data.prefill || {}),
+          _integration: {
+            workId: event.data.workId || '',
+            scheduleInstanceId: event.data.scheduleInstanceId || '',
+            formId: event.data.formId,
+          },
+        }, defaultSettings));
+        setIsListOpen(false);
+        setNotice({ message: '선택한 일정의 정보가 서식에 반영되었습니다. 확인 후 저장·출력하세요.', type: 'success' });
+      };
+      if (saving) {
+        setNotice({ message: '저장이 끝난 후 다시 시도해 주세요.', type: 'error' });
+      } else if (isDirty) {
+        setPendingNavigation(() => open);
+      } else {
+        open();
+      }
+    };
+    window.addEventListener('message', receiveIntegratedTask);
+    return () => window.removeEventListener('message', receiveIntegratedTask);
+  }, [defaultSettings, isDirty, saving]);
 
   // 서식 전환 시 기본값 자동 적용
   const handleSelectFormCode = (value) => {
@@ -220,6 +263,17 @@ export default function App() {
         msg += `\n(주의: 로컬에는 저장되었으나 Supabase 동기화 실패: ${result.supabaseResult.error})`;
       }
       setNotice({ message: msg, type: result.supabaseResult?.error ? 'error' : 'success' });
+      if (window.parent !== window && docToSave.data?._integration?.scheduleInstanceId) {
+        window.parent.postMessage({
+          type: 'safety:form-saved',
+          workId: docToSave.data._integration.workId,
+          scheduleInstanceId: docToSave.data._integration.scheduleInstanceId,
+          formId: docToSave.data._integration.formId,
+          documentId: result.doc?.id || '',
+          title: result.doc?.title || docToSave.title,
+          savedAt: new Date().toISOString(),
+        }, '*');
+      }
     } catch (err) {
       setNotice({ message: '저장하지 못했습니다. ' + err.message, type: 'error' });
     } finally {
