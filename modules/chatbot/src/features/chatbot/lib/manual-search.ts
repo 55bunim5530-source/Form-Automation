@@ -34,6 +34,7 @@ export type Evidence = {
   sourceTitle: string;
   sourcePublisher?: string;
   sourceDate: string;
+  fetchedAt?: string;
   url?: string;
 };
 
@@ -44,6 +45,8 @@ export type GroundedPoint = {
 
 export type ConversationContext = {
   question: string;
+  recentQuestions?: string[];
+  lastAnswer?: string;
   category?: string;
   evidenceSections: string[];
   conceptIds?: string[];
@@ -91,7 +94,7 @@ const CATEGORY_TERMS: Record<string, string[]> = {
   ventilation: ["보일러실", "환기팬", "가스누출", "환기설비"],
   lighting: ["조도", "어두운", "조명", "배관공동구", "미화창고"],
   machinery: ["송풍기", "벨트", "캔버스", "윤활"],
-  electrical: ["감전", "차단기", "충전부", "콘센트", "접지", "누전"],
+  electrical: ["감전", "차단기", "충전부", "콘센트", "접지", "누전", "분전반", "배전반"],
   fall: ["추락", "떨어짐", "옥상", "사다리", "안전난간", "현수막", "안전계단", "고소작업", "높은곳"],
   workstop: ["작업중지권", "작업중지", "작업재개", "급박한위험"],
   hotwork: ["화기작업", "용접", "불티", "화재감시자"],
@@ -242,11 +245,21 @@ function conceptualRouteFor(analysis: QueryAnalysis): QuestionRoute | undefined 
 const QUESTION_ROUTES: QuestionRoute[] = [
   // 1·2차 비교 점검에서 질문별 직답이 약했던 항목을 먼저 처리한다.
   // 새 질문 100개 점검: 근거가 있는 질문은 직답하고, 자료가 없는 주제는 오탐을 막는다.
+  directRoute(/안전보건협의체.*(?:누가|참여|언제|회의|열어)/u, "contractor", ["안전보건 도급 협의체의 구성과 운영"],
+    "안전보건 도급 협의체는 도급인과 그 수급인 전원으로 구성합니다. 협의체는 매월 1회 이상 정기적으로 개최하고 회의 결과를 기록·보존합니다.", []),
+  directRoute(/(?:찰과상|경미한사고).*(?:휴업.*(?:없|않|안)|(?:없|않|안).*휴업)/u, "accident", ["산업안전보건법 과제 6. 산업재해 재발방지 대책 수립", "산업재해 보고·기록"],
+    "등록 자료는 응급조치 후 바로 근무 가능한 경미한 사고를 기관 자체 종결 대상으로 안내합니다. 사고가 발생하면 사고 경위와 원인을 조사하도록 안내합니다.",
+    ["경미한 사고에는 별도 신고의무가 없다고 안내합니다."]),
+  directRoute(/(?:넘어|미끄러|전도).*(?:4일|나흘).*(?:휴업|쉬|요양)/u, "accident", ["산업재해 비상대응체계", "산업재해 보고와 재발방지"],
+    "사고가 나면 먼저 응급조치와 현장 통제·추가 피해 방지를 실시합니다. 연속 3일 이상 휴업이 필요한 재해는 산업재해조사표 제출 대상입니다.",
+    ["산업재해조사표는 사고 발생일부터 1개월 이내에 제출합니다."]),
+  { test: /(?:분전반|배전반).*(?:덮개|열린|노출|점검)/u, category: "electrical", preferredSections: ["배전반 점검 등 전기작업 안전수칙", "누전차단기 충전부 노출 방지"] },
   unavailableRoute(/^(?=.*[a-z])[a-z0-9?!.,'"-]+$/iu, "현재 챗봇은 한국어 질문만 지원합니다. 질문을 한국어로 입력해 주세요."),
   unavailableRoute(/안전싸이렌/u, "등록된 안전싸이렌 자료에는 개별 안전 주제는 있지만 안전싸이렌 자체의 정의와 사용 기준은 없습니다. 서울특별시교육청보건안전진흥원의 최신 안전싸이렌 안내를 확인해 주세요."),
   unavailableRoute(/라돈/u, "현재 등록 자료에는 라돈 농도 측정 방법과 기준이 없습니다. 학교 시설·환경 담당 부서와 교육청의 실내공기질 또는 라돈 측정 지침을 확인해 주세요."),
   unavailableRoute(/소방시설.*(?:점검|언제|주기)/u, "소방시설 점검 주기는 현재 등록된 산업안전보건 자료 범위에 없습니다. 학교 소방안전관리자와 소방 관계 법령·점검 지침을 확인해 주세요."),
   unavailableRoute(/(?:공사.*학생안전|학생안전.*공사)/u, "공사 중 학생 안전은 현재 챗봇의 근로자 산업안전보건 자료만으로 직접 답할 수 없습니다. 학교 시설·학교안전 담당 부서의 공사장 학생 통행·출입통제 지침을 확인해 주세요."),
+  unavailableRoute(/msds.*(?:ai|인공지능).*?(?:pdf|원문)|msds.*(?:pdf|원문).*?(?:ai|인공지능)/iu, "제조사 원문 MSDS를 확보하지 못한 제품은 앱의 AI 분석 결과만으로 성분·유해성·보호조치를 확정할 수 없습니다. 제조사나 공급처의 공식 자료를 먼저 확인해 주세요."),
   unavailableRoute(/조리흄.*(?:무엇|뭐|정의)/u, "현재 등록 자료에는 급식실 환기와 폐암 검진 자료는 있지만 조리흄의 정의를 직접 설명하는 근거가 없습니다. 공식 급식실 환기설비 지침을 추가한 뒤 답변할 수 있습니다."),
   unavailableRoute(/(?:악성민원|감정노동)/u, "현재 등록 자료에는 고객 폭언으로 인한 건강장해 예방이 교육 주제로만 제시되어 있고 구체적인 악성민원·감정노동 보호 절차는 없습니다. 교육청의 민원 대응 및 근로자 보호 지침을 확인해 주세요."),
   unavailableRoute(/(?:수료증|이수증).*(?:분실|잃어|재발급)/u, "등록 자료에는 교육연수원 나의 학습방에서 수료증을 발급하는 절차만 있고 분실 후 재발급 절차는 없습니다. 나의 학습방에서 재출력 가능 여부를 확인하고 교육연수원에 문의해 주세요."),
@@ -1092,6 +1105,12 @@ const indexedPages = sources.flatMap((source) => source.pages.map((page) => {
 }));
 
 const LOW_SIGNAL_TERMS = new Set(["산업안전보건", "안전보건", "학교", "교육청", "서울", "지침", "자료", "관련"]);
+// 일반 동사(점검·보고·관리)보다 질문의 구체적인 대상이 근거 자료에 실제로 있어야 한다.
+const DOCUMENT_ANCHORS: Array<{ question: RegExp; evidence: RegExp }> = [
+  { question: /(?:분전반|배전반)/u, evidence: /(?:분전반|배전반|누전차단기|충전부)/u },
+  { question: /운동장.*(?:시설물|점검)|(?:시설물|점검).*운동장/u, evidence: /운동장/u },
+  { question: /정기점검실시결과보고/u, evidence: /정기점검실시결과보고/u },
+];
 const INTENT_PAGE_SIGNALS: Partial<Record<QueryIntent, { test: RegExp; bonus: number }>> = {
   emergency: { test: /(?:119|응급|의식|호흡|심폐소생|aed)/u, bonus: 18 },
   application: { test: /(?:신청|접수|제출|서류|요양급여)/u, bonus: 10 },
@@ -1117,9 +1136,10 @@ function outOfScopeNotice(question: string): string | undefined {
 }
 
 function detectCategory(question: string): string | undefined {
+  const condensed = expandQuery(question).replaceAll(" ", "");
+  if (/(?:분전반|배전반)/u.test(condensed)) return "electrical";
   const conceptCategory = analyzeQuery(question).primaryCategory;
   if (conceptCategory) return conceptCategory;
-  const condensed = expandQuery(question).replaceAll(" ", "");
   let best: { category: string; length: number } | undefined;
   for (const [category, terms] of Object.entries(CATEGORY_TERMS)) {
     for (const term of terms) {
@@ -1314,6 +1334,11 @@ export function searchManual(question: string, previousContext?: ConversationCon
         ["사고의 일시·장소·피해 정도와 즉시 조치 내용을 기록합니다.", "중대산업재해 여부와 외부 보고 대상은 담당 부서가 즉시 확인해야 합니다."]);
     }
     if (previousCategory === "accident" && /(?:기한|언제까지|며칠내)/u.test(normalizedQuestion)) {
+      if (/조사표/u.test(normalizedQuestion)) {
+        return directRoute(/(?:)/u, "accident", ["산업재해 보고와 재발방지"],
+          "연속 3일 이상 휴업이 필요한 재해의 산업재해조사표는 사고 발생일부터 1개월 이내에 제출합니다.",
+          ["휴업일수는 재해발생일을 제외하고 휴무일·공휴일을 포함해 계산합니다."]);
+      }
       return directRoute(/(?:)/u, "accident", ["산업재해 보고와 재발방지", "산업재해 조사표 제출"],
         "중대산업재해는 지체 없이 보고하고, 산업재해조사표 제출 대상 사고는 발생일부터 1개월 이내에 관할 지방고용노동관서에 제출합니다.",
         ["사고 유형에 따라 보고 대상과 기한이 다르므로 담당 부서에서 해당 여부를 바로 확인합니다."]);
@@ -1432,8 +1457,13 @@ export function searchManual(question: string, previousContext?: ConversationCon
   }
   if (!questionRoute && !category) return fallback;
   if (!terms.length && !category) return fallback;
+  // 자료 검색은 실제 일정 저장 요청을 수행할 수 없다. 일반 '점검' 문구를 근거로 꾸며내지 않는다.
+  if (/(?:일정|캘린더).*(?:넣어|등록|추가|만들).*(?:줘|주세요)/u.test(normalizedQuestion)) return fallback;
+  const requiredAnchors = DOCUMENT_ANCHORS.filter((rule) => rule.question.test(normalizedQuestion));
 
   const ranked = indexedPages.map((page) => {
+    const pageSubject = `${page.section} ${page.text}`.replaceAll(" ", "");
+    if (requiredAnchors.some((rule) => !rule.evidence.test(pageSubject))) return undefined;
     const searchTerms = "searchTerms" in page ? page.searchTerms : [];
     const normalized = normalize(`${page.section} ${page.text} ${searchTerms.join(" ")}`);
     const normalizedCompact = normalized.replaceAll(" ", "");
@@ -1497,7 +1527,7 @@ export function searchManual(question: string, previousContext?: ConversationCon
     const contextBonus = previousContext?.evidenceSections.some((section) => page.section.includes(section) || section.includes(page.section)) ? 8 : 0;
     const score = matched.length * 2 + titleHits * 3 + aliasHits * 5 + (page.category === category ? 12 : 0) + intentBonus + supervisorBonus + supervisorDutyBonus + currentTrainingBonus + contractorActionBonus + contractorCouncilBonus + newEmployeeTrainingBonus + regularTrainingBonus + workerHealthBonus + committeeBonus + accidentResponseBonus + routeBonus + contextBonus;
     return { page, score, matched, aliasHits, routeBonus, routeIndex };
-  }).filter((entry) => entry.score >= 6)
+  }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry && entry.score >= 6))
     .sort((a, b) => b.score - a.score || a.page.pdfPage - b.page.pdfPage);
 
   if (!ranked.length) return fallback;
@@ -1527,6 +1557,23 @@ export function searchManual(question: string, previousContext?: ConversationCon
     ? guideFromRoute(selectedPageList, questionRoute.guide) ?? guideFromEvidence(selectedPageList, terms, questionRoute.focusTerms)
     : guideFromEvidence(selectedPageList, terms, questionRoute?.focusTerms);
   if (!guide) return fallback;
+  // A directly supporting manual passage may rank below several newer snippets.
+  // Include it only when it confirms a quantity and timing cue in the prepared answer.
+  const compactGuide = normalize(guide.message).replaceAll(" ", "");
+  const quantities = [...guide.message.matchAll(/\d+(?:\.\d+)?\s*(?:시간|회|년|개월|일)/gu)]
+    .map(([value]) => normalize(value).replaceAll(" ", ""));
+  const timingCues = [...guide.message.matchAll(/(?:반기|분기|매월|매년|월\s*\d+\s*회|주\s*\d+\s*회)/gu)]
+    .map(([value]) => normalize(value).replaceAll(" ", ""));
+  const directlySupportingManual = selected.some((entry) => entry.page.sourceTitle === manual.sourceTitle)
+    || quantities.length === 0 || timingCues.length === 0 || compactGuide.length === 0
+    ? undefined
+    : ranked.find((entry) => {
+      if (entry.page.sourceTitle !== manual.sourceTitle || entry.page.category !== category) return false;
+      const passage = normalize(entry.page.text).replaceAll(" ", "");
+      return quantities.some((quantity) => passage.includes(quantity))
+        && timingCues.some((cue) => passage.includes(cue));
+    });
+  const cited = directlySupportingManual ? [...selected, directlySupportingManual] : selected;
   const toEvidence = ({ page }: (typeof ranked)[number]): Evidence => ({
     pdfPage: page.pdfPage,
     referenceLabel: page.referenceLabel,
@@ -1543,13 +1590,13 @@ export function searchManual(question: string, previousContext?: ConversationCon
     keyPoints: guide?.keyPoints ?? [],
     sourceTitle: manual.sourceTitle,
     sourceDate: manual.sourceDate,
-    evidence: selected.map(toEvidence),
-    relatedEvidence: related.map(toEvidence),
+    evidence: cited.map(toEvidence),
+    relatedEvidence: related.filter((entry) => entry.page !== directlySupportingManual?.page).map(toEvidence),
     outOfScopeNotice: scopeNotice,
     context: {
       question,
       category,
-      evidenceSections: selected.map((entry) => entry.page.section),
+      evidenceSections: cited.map((entry) => entry.page.section),
       conceptIds: analysis.conceptIds.slice(0, 10),
       intent: analysis.primaryIntent,
       subjects: analysis.subjects,

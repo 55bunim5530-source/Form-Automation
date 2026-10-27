@@ -1,0 +1,40 @@
+{
+  "sourceTitle": "교육서비스업 안전보건관리체제 적용 질의회시",
+  "sourcePublisher": "고용노동부 고객상담센터",
+  "sourceDate": "2022-02-10",
+  "sourceUrl": "https://1350.moel.go.kr/home/hp/data/faqView.do?faq_idx=1000001123",
+  "extraction": "Official web FAQ; manually curated semantic chunks",
+  "deduplication": "General committee composition and meeting guidance already present in the corpus was excluded. Only education-service applicability and worker-count calculation rules were retained.",
+  "pages": [
+    {
+      "pdfPage": 1,
+      "referenceLabel": "고용노동부 질의회시 · 현업업무종사자 기준",
+      "category": "organization",
+      "sourceKind": "web",
+      "searchTerms": [
+        "학교 산업안전보건위원회 설치 대상",
+        "교육서비스업 산업안전보건위원회",
+        "현업업무종사자 100명",
+        "수급인 근로자 제외",
+        "사업장 단위"
+      ],
+      "section": "학교 산업안전보건위원회 설치 대상 판단",
+      "text": "교육서비스업의 안전보건관리체제 적용 여부는 사업장 단위로 판단한다. 산업안전보건위원회, 안전보건관리책임자 및 안전보건관리규정의 적용 대상은 해당 사업장 소속 현업업무종사자가 100명 이상인 경우이며, 이 인원에는 수급인 근로자를 포함하지 않는다."
+    },
+    {
+      "pdfPage": 1,
+      "referenceLabel": "고용노동부 질의회시 · 교육서비스업 적용범위",
+      "category": "organization",
+      "sourceKind": "web",
+      "searchTerms": [
+        "학교 안전보건관리체제",
+        "교육서비스업 현업업무종사자",
+        "학교 사업장 단위",
+        "산업안전보건법 적용"
+      ],
+      "section": "교육서비스업 안전보건관리체제 적용범위",
+      "text": "공공행정 또는 교육서비스업 중 각급학교는 안전보건관리체제와 안전보건관리규정의 일부 적용이 제외되지만, 현업업무종사자가 있는 경우에는 그 종사자에 대해 관련 규정이 적용된다. 학교가 독립된 사업장인지 여부는 인사·노무관리, 회계, 업무처리 능력과 안전보건 관련 의사결정의 독립성 등을 종합해 판단한다."
+    }
+  ],
+  "chunkCount": 2
+}

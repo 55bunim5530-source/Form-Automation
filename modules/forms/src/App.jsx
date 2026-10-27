@@ -167,7 +167,12 @@ export default function App() {
           },
         }, defaultSettings));
         setIsListOpen(false);
-        setNotice({ message: '선택한 일정의 정보가 서식에 반영되었습니다. 확인 후 저장·출력하세요.', type: 'success' });
+        setNotice({
+          message: event.data.scheduleInstanceId || event.data.workId
+            ? '선택한 일정의 정보가 서식에 반영되었습니다. 확인 후 저장·출력하세요.'
+            : '관련 서식을 열었습니다. 내용을 확인한 뒤 작성·저장하세요.',
+          type: 'success'
+        });
       };
       if (saving) {
         setNotice({ message: '저장이 끝난 후 다시 시도해 주세요.', type: 'error' });

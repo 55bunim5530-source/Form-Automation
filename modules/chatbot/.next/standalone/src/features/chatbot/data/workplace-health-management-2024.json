@@ -1,0 +1,42 @@
+{
+  "sourceTitle": "사업장 보건관리 업무매뉴얼(2024)",
+  "sourcePublisher": "고용노동부",
+  "sourceDate": "2024-12-30",
+  "sourceUrl": "https://www.moel.go.kr/local/pyongtaek/info/policydata/view.do?bbs_seq=20241201986",
+  "sourceSha256": "4f02ef74c93a17288ce4ef6a4140cf605966edc1242a7212e7e98113d7a99def",
+  "extraction": "Official PDF text extraction; relevant page visually checked; manually curated semantic chunks",
+  "deduplication": "General health-management content already present in the corpus was excluded. Only first-aid details that strengthen burn and chemical-exposure answers were retained.",
+  "pages": [
+    {
+      "pdfPage": 192,
+      "referenceLabel": "PDF 192쪽 · 화상 응급조치",
+      "category": "firstaid",
+      "searchTerms": [
+        "화상 응급처치",
+        "찬물 화상",
+        "화상 부위 식히기",
+        "피부에 붙은 옷",
+        "화상 얼음",
+        "화상 연고"
+      ],
+      "section": "사업장 화상 발생 시 응급조치",
+      "text": "화상이 발생하면 즉시 찬물로 가능한 오래 해당 부위를 식히고, 피부에 들러붙은 옷은 제거하지 않는다. 이 자료는 얼음이나 연고 사용 여부를 직접 제시하지 않으므로, 해당 여부는 119 또는 의료기관의 안내에 따른다."
+    },
+    {
+      "pdfPage": 192,
+      "referenceLabel": "PDF 192쪽 · 눈·피부 노출 응급조치",
+      "category": "msds",
+      "searchTerms": [
+        "화학물질 눈에 들어감",
+        "화학물질 피부 접촉",
+        "MSDS 4번",
+        "응급조치 요령",
+        "오염된 의복 제거",
+        "눈 세척"
+      ],
+      "section": "화학제품별 MSDS 응급조치 요령 확인",
+      "text": "화학제품을 사용하기 전에는 MSDS의 2번 유해성·위험성과 4번 응급조치 요령을 확인한다. 눈에 들어가면 몇 분간 물로 조심스럽게 씻고 가능하면 콘택트렌즈를 제거한 뒤 계속 세척하며, 자극이 지속되면 의학적 조치를 받는다. 피부에 묻으면 오염된 의복을 벗거나 제거하고 물로 씻거나 샤워하며, 피부 자극이 생기면 의학적 조치를 받는다."
+    }
+  ],
+  "chunkCount": 2
+}

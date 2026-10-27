@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { SearchResponse } from "@/features/chatbot/lib/manual-search";
+import { evidenceParagraphs } from "@/features/chatbot/lib/evidence-format";
 import { recommendFollowUps, type FollowUpModule, type FollowUpRecommendation } from "@/features/chatbot/lib/action-recommendations";
 import {
   quickTopics,
@@ -41,8 +42,9 @@ type UserMessage = { id: number; kind: "user"; text: string };
 type Message = UserMessage | AnswerMessage;
 
 const SHELL_ORIGIN = "http://127.0.0.1:8080";
+const SHELL_ORIGINS = [SHELL_ORIGIN, "http://localhost:8080"];
 const SHELL_URL = `${SHELL_ORIGIN}/shell/app.html`;
-type ActionName = "navigate" | "schedule-preview" | "schedule-save";
+type ActionName = "navigate" | "work-register" | "schedule-preview" | "schedule-save";
 type ScheduleDraft = {
   draftId: string;
   title: string;
@@ -62,12 +64,13 @@ type ActionResult = {
     draft?: ScheduleDraft;
     missing?: string[];
     status?: "saved" | "already-saved" | "duplicate";
+    registrationType?: "situation" | "schedule" | "choose";
     taskId?: string;
     matches?: unknown[];
   };
   error?: string;
 };
-type ParentReply = { type: "safety:assistant-action-result" | "safety:chat-law-context-result"; requestId: string; [key: string]: unknown };
+type ParentReply = { type: "safety:assistant-action-result"; requestId: string; [key: string]: unknown };
 type PendingReply = { resolve: (reply: ParentReply) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> };
 
 function needsLegalContext(question: string): boolean {
@@ -76,16 +79,29 @@ function needsLegalContext(question: string): boolean {
 }
 
 function isTrustedShellMessage(event: MessageEvent): boolean {
-  return window.parent !== window && event.source === window.parent && event.origin === SHELL_ORIGIN;
+  return window.parent !== window && event.source === window.parent && SHELL_ORIGINS.some((origin) => origin === event.origin);
 }
 
-function integratedUrl(module: FollowUpModule): string {
+function postToShell(message: Record<string, unknown>): void {
+  // Only the origin that actually hosts the parent window can receive this.
+  for (const origin of SHELL_ORIGINS) window.parent.postMessage(message, origin);
+}
+
+function integratedUrl(item: FollowUpRecommendation): string {
   const url = new URL(SHELL_URL);
-  url.searchParams.set("module", module);
+  url.searchParams.set("module", item.module);
+  if (item.kind === "register") url.searchParams.set("register", "choose");
+  if (item.module === "forms" && item.formId) url.searchParams.set("formId", item.formId);
   return url.toString();
 }
 
 function statedDate(question: string): string {
+  if (/다음\s*달\s*(?:첫|1)\s*(?:평일|영업일)/u.test(question)) {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    while (first.getDay() === 0 || first.getDay() === 6) first.setDate(first.getDate() + 1);
+    return `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}-${String(first.getDate()).padStart(2, "0")}`;
+  }
   const match = question.match(/(?:^|\D)(\d{4})\s*(?:년\s*|[-./])\s*(\d{1,2})\s*(?:월\s*|[-./])\s*(\d{1,2})\s*(?:일)?(?:\D|$)/u);
   if (!match) return "";
   const [, yearText, monthText, dayText] = match;
@@ -93,6 +109,13 @@ function statedDate(question: string): string {
   const date = new Date(Date.UTC(year, month - 1, day));
   if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) return "";
   return `${yearText}-${monthText.padStart(2, "0")}-${dayText.padStart(2, "0")}`;
+}
+
+function statedScheduleTitle(question: string, topic: string): string {
+  if (/정기\s*점검/u.test(question)) return "정기점검";
+  if (/합동\s*점검/u.test(question)) return "합동점검";
+  if (/안전보건\s*협의체/u.test(question)) return "안전보건협의체 회의";
+  return topic === "risk" ? "위험성평가 업무" : "산업안전보건 업무 일정";
 }
 
 function statedTarget(question: string): string {
@@ -138,16 +161,16 @@ export function ChatWorkspace({ aiEnabled, embedded = false }: { aiEnabled: bool
     pendingRepliesRef.current.clear();
   }, []);
 
-  function requestParent(type: "safety:assistant-action" | "safety:chat-law-context", payload: Record<string, unknown>): Promise<ParentReply> {
+  function requestParent(type: "safety:assistant-action", payload: Record<string, unknown>): Promise<ParentReply> {
     if (!embedded || window.parent === window) return Promise.reject(new Error("통합 화면에서만 사용할 수 있습니다."));
     const requestId = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         pendingRepliesRef.current.delete(requestId);
         reject(new Error("통합 화면의 응답이 지연되고 있습니다. 다시 시도해 주세요."));
-      }, 12_000);
+      }, payload.action === "work-register" ? 70_000 : 12_000);
       pendingRepliesRef.current.set(requestId, { resolve, reject, timer });
-      window.parent.postMessage({ type, version: 1, requestId, ...payload }, SHELL_ORIGIN);
+      postToShell({ type, version: 1, requestId, ...payload });
     });
   }
 
@@ -163,7 +186,7 @@ export function ChatWorkspace({ aiEnabled, embedded = false }: { aiEnabled: bool
     const receiveReply = (event: MessageEvent) => {
       if (!isTrustedShellMessage(event)) return;
       const reply = event.data as ParentReply;
-      if (reply?.type !== "safety:assistant-action-result" && reply?.type !== "safety:chat-law-context-result") return;
+      if (reply?.type !== "safety:assistant-action-result") return;
       if (typeof reply.requestId !== "string") return;
       const pending = pendingRepliesRef.current.get(reply.requestId);
       if (!pending) return;
@@ -190,29 +213,17 @@ export function ChatWorkspace({ aiEnabled, embedded = false }: { aiEnabled: bool
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      let lawContext: unknown;
-      if (needsLegalContext(question)) {
-        lawContext = { status: "unavailable" };
-        try {
-          const reply = await requestParent("safety:chat-law-context", { question });
-          if (reply.type === "safety:chat-law-context-result" && reply.ok === true && reply.context && typeof reply.context === "object") {
-            lawContext = reply.context;
-          }
-        } catch {
-          // Search still runs, but the API must not claim a verified legal deadline.
-        }
-      }
       if (controller.signal.aborted) return;
       const response = await fetch("/api/chatbot/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, previousContext: previousContextRef.current, lawContext }),
+        body: JSON.stringify({ question, previousContext: previousContextRef.current }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error("검색 요청에 실패했습니다.");
       const result = (await response.json()) as SearchResponse;
       if (controller.signal.aborted) return;
-      if (result.context) previousContextRef.current = result.context;
+      previousContextRef.current = result.context;
       idRef.current += 1;
       setMessages((current) => [
         ...current,
@@ -234,7 +245,7 @@ export function ChatWorkspace({ aiEnabled, embedded = false }: { aiEnabled: bool
       if (!embedded || !isTrustedShellMessage(event) || event.data?.type !== "safety:ask-task") return;
       const messageId = String(event.data.messageId || "");
       if (messageId) {
-        window.parent.postMessage({ type: "safety:message-accepted", module: "chatbot", messageId }, SHELL_ORIGIN);
+        postToShell({ type: "safety:message-accepted", module: "chatbot", messageId });
         if (acceptedMessageIdsRef.current.has(messageId)) return;
         acceptedMessageIdsRef.current.add(messageId);
       }
@@ -251,7 +262,7 @@ export function ChatWorkspace({ aiEnabled, embedded = false }: { aiEnabled: bool
   useEffect(() => {
     // Register the message listener first so the parent cannot flush a queued
     // task question before this frame is ready to receive it.
-    if (embedded && window.parent !== window) window.parent.postMessage({ type: "safety:module-ready", module: "chatbot" }, SHELL_ORIGIN);
+    if (embedded && window.parent !== window) postToShell({ type: "safety:module-ready", module: "chatbot" });
   }, [embedded]);
 
   function clearConversation() {
@@ -376,7 +387,7 @@ function Welcome({ onChoose, aiEnabled }: { onChoose: (question: string) => void
     <div className="mt-9 grid gap-3 border-t border-[#e2eaea] pt-6 sm:grid-cols-3">
       <InfoItem icon={CircleHelp} title="질문 입력" body="업무 상황을 자연어로 질문" />
       <InfoItem icon={BookOpenText} title="근거 확인" body="매뉴얼 PDF 페이지와 원문 연결" />
-      <InfoItem icon={ArrowDown} title="업무 연결" body="답변 후 관련 화면 연결·일정 초안 확인" />
+      <InfoItem icon={ArrowDown} title="업무 연결" body="답변 후 관련 업무 등록 화면 연결" />
     </div>
   </div>;
 }
@@ -402,24 +413,37 @@ function AnswerBubble({ message, embedded, sendAction }: { message: AnswerMessag
   const relatedEvidence = result.relatedEvidence ?? [];
   const [visibleRelatedCount, setVisibleRelatedCount] = useState(0);
   const visibleEvidence = [
-    ...result.evidence,
-    ...relatedEvidence.slice(0, visibleRelatedCount),
+    ...result.evidence.map((item, index) => ({ item, label: `근거 ${index + 1}` })),
+    ...relatedEvidence.slice(0, visibleRelatedCount).map((item) => ({ item, label: "추가 자료" })),
   ];
   const hasMoreEvidence = visibleRelatedCount < relatedEvidence.length;
   const isGptAnswer = result.answerMode === "gpt";
+  const isAppHelp = result.sourceTitle === "프로그램 기능 안내";
+  const isClarification = result.status === "not_found" && /^-?\s*어떤\s*점검/u.test(result.message);
+  const isOutOfScope = result.status === "not_found" && /지원\s*범위가\s*아닙니다/u.test(result.message);
+  const answerLines = result.message.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
+  const answerBullets = answerLines.length > 0 && answerLines.every((line) => line.startsWith("- "))
+    ? answerLines.map((line) => line.slice(2))
+    : [];
   const recommendations = recommendFollowUps(message.question, result);
   return <div className="flex items-start gap-3 sm:gap-4">
     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0f3ee] text-[#168f78]"><ShieldCheck size={19} /></div>
     <div className="min-w-0 flex-1">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-[15px] font-bold text-[#1e4046]">{result.status === "not_found" ? "직접 근거 없음" : isGptAnswer ? "AI 근거 답변" : "근거 검색 결과"}</span>
-        <span className="rounded-full bg-[#eaf3ff] px-2.5 py-1 text-[11px] font-bold text-[#245899]">{result.status === "not_found" ? "담당 부서 확인 필요" : isGptAnswer ? "AI 답변" : "검색 모드"}</span>
+        <span className="rounded-full bg-[#eaf3ff] px-2.5 py-1 text-[11px] font-bold text-[#245899]">{isClarification ? "질문 확인" : isOutOfScope ? "지원 범위 안내" : result.status === "not_found" ? "담당 부서 확인 필요" : isAppHelp ? "프로그램 사용법" : isGptAnswer ? "AI 답변" : "근거자료 안내"}</span>
       </div>
       <div className="rounded-2xl rounded-tl-[5px] border border-[#e1e9e9] bg-white p-5 shadow-[0_3px_12px_rgba(29,70,71,0.035)] sm:p-6">
-        <p className="whitespace-pre-wrap text-[16px] leading-8 text-[#304b51]">{result.message}</p>
-        {needsLegalContext(message.question) && <p className={`mt-3 rounded-lg px-3 py-2 text-[12px] leading-5 ${lawVerification?.status === "verified" ? "bg-[#eef8f2] text-[#24694c]" : "bg-[#fff7e8] text-[#795f28]"}`}>{lawVerification?.status === "verified" ? "국가법령정보센터 API 원문 조회 성공 · 실제 적용 조건은 별도로 확인하세요." : `국가법령정보센터 API 원문 확인 불가${lawVerification?.reason ? `: ${lawVerification.reason}` : " · 법정 기한·대상·주기를 확정하지 않습니다."}`}</p>}
+        {answerBullets.length > 0
+          ? <ul className="list-disc space-y-2 pl-5 text-[16px] leading-7 text-[#304b51] marker:text-[#168f78]">
+            {answerBullets.map((bullet, index) => <li key={`${index}-${bullet}`}>{bullet}</li>)}
+          </ul>
+          : <p className="whitespace-pre-wrap text-[16px] leading-8 text-[#304b51]">{result.message}</p>}
+        {!isAppHelp && (lawVerification?.status === "verified" || needsLegalContext(message.question)) && <p className={`mt-3 rounded-lg px-3 py-2 text-[12px] leading-5 ${lawVerification?.status === "verified" ? "bg-[#eef8f2] text-[#24694c]" : "bg-[#fff7e8] text-[#795f28]"}`}>{lawVerification?.status === "verified" ? "국가법령정보센터 API 원문 조회 성공 · 실제 적용 조건은 별도로 확인하세요." : `국가법령정보센터 API 원문 확인 불가${lawVerification?.reason ? `: ${lawVerification.reason}` : " · 법정 기한·대상·주기를 확정하지 않습니다."}`}</p>}
+        {isAppHelp && needsLegalContext(message.question) && <p className="mt-3 rounded-lg bg-[#fff7e8] px-3 py-2 text-[12px] leading-5 text-[#795f28]">이 답변은 프로그램 사용법 안내입니다. 실제 법정 의무·기한은 해당 법령 원문에서 확인해 주세요.</p>}
         {result.outOfScopeNotice && <div className="mt-4 rounded-xl border border-[#ead9a9] bg-[#fff9e9] px-4 py-3 text-[13px] leading-6 text-[#715d28]"><span className="font-bold">범위 밖 요청</span><span className="ml-2">{result.outOfScopeNotice}</span></div>}
-        {result.keyPoints.length > 0 && <div className="mt-5 rounded-xl border border-[#c9dcf4] bg-[#f1f7ff] p-5 sm:p-6">
+        {recommendations.length > 0 && <FollowUpActions message={message} recommendations={recommendations} embedded={embedded} sendAction={sendAction} />}
+        {result.keyPoints.length > 0 && !(isGptAnswer && answerBullets.length > 0) && <div className="mt-5 rounded-xl border border-[#c9dcf4] bg-[#f1f7ff] p-5 sm:p-6">
           <div className="text-[14px] font-bold tracking-[0.03em] text-[#245899]">핵심 내용</div>
           <ul className="mt-4 space-y-3">
             {result.keyPoints.map((point) => <li key={`${point.text}-${point.evidenceIds.join("-")}`} className="flex gap-3 text-[15px] leading-7 text-[#294b65]"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#3274ba]" /><span>{point.text} <span className="whitespace-nowrap font-bold text-[#245899]">{point.evidenceIds.map((id) => `[근거 ${id}]`).join(" ")}</span></span></li>)}
@@ -428,33 +452,36 @@ function AnswerBubble({ message, embedded, sendAction }: { message: AnswerMessag
         {result.evidence.length > 0 && <div className="mt-5 border-t border-[#ecf0f0] pt-5">
           <div className="mb-4 flex items-center gap-2 text-[14px] font-bold text-[#3d6267]"><BookOpenText size={18} className="text-[#218d7a]" /> 근거자료 내용</div>
           <div className="space-y-3">
-            {visibleEvidence.map((item, index) => <details key={`${item.sourceTitle}-${item.pdfPage}-${item.section}`} className="group rounded-xl border border-[#d8e6e5] bg-[#f8fbfa]">
+            {visibleEvidence.map(({ item, label }) => <details key={`${item.sourceTitle}-${item.pdfPage}-${item.section}`} className="group rounded-xl border border-[#d8e6e5] bg-[#f8fbfa]">
               <summary className="flex cursor-pointer list-none items-start gap-3 p-4 [&::-webkit-details-marker]:hidden">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e9f3f0] text-[#4b9b8a]"><FileQuestion size={17} /></div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-[#e4f2ee] px-2 py-0.5 text-[11px] font-bold text-[#247665]">근거 {index + 1}</span><span className="text-[14px] font-bold text-[#385c62]">{formatEvidenceHeading(item.section, item.referenceLabel ?? `PDF ${item.pdfPage}쪽`)}</span></div>
-                  <div className="mt-1.5 text-[12px] text-[#718b8f]">{item.sourceTitle}{item.sourcePublisher ? ` · ${item.sourcePublisher}` : ""}{item.sourceDate ? ` · ${item.sourceDate}` : ""}</div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-[#e4f2ee] px-2 py-0.5 text-[11px] font-bold text-[#247665]">{label}</span><span className="text-[14px] font-bold text-[#385c62]">{formatEvidenceHeading(item.section, item.referenceLabel ?? `PDF ${item.pdfPage}쪽`)}</span></div>
+                  <div className="mt-1.5 text-[12px] text-[#718b8f]">{item.sourceTitle}{item.sourcePublisher ? ` · ${item.sourcePublisher}` : ""}{item.sourceDate ? ` · ${item.sourcePublisher === "법제처 국가법령정보센터" ? "시행일" : "발행일"} ${item.sourceDate}` : " · 발행일 미표기"}</div>
+                  {item.fetchedAt && <div className="mt-1 text-[12px] text-[#718b8f]">조회 시각: {new Date(item.fetchedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>}
                   <div className="mt-2 text-[12px] font-semibold text-[#43877b]">근거 원문 펼치기</div>
                 </div>
                 <ChevronDown size={18} className="mt-1 shrink-0 text-[#6f9290] transition group-open:rotate-180" />
               </summary>
               <div className="border-t border-[#e2ecea] px-4 pb-4 pt-3 sm:pl-[60px]">
-                <p className="rounded-lg bg-white px-4 py-3 text-[14px] leading-7 text-[#405f65]">{item.excerpt}</p>
+                <div className="space-y-3 rounded-lg bg-white px-4 py-3 text-[14px] leading-7 text-[#405f65]">
+                  {evidenceParagraphs(item.excerpt, item.sourcePublisher === "법제처 국가법령정보센터").map((paragraph, paragraphIndex) =>
+                    <p key={paragraphIndex} className={`whitespace-pre-line break-words ${paragraphIndex === 0 && item.sourcePublisher === "법제처 국가법령정보센터" ? "font-semibold text-[#294d58]" : ""}`}>{paragraph}</p>)}
+                </div>
                 {item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#1e806f] hover:underline">공식 원문 열기 <ExternalLink size={14} /></a> : <span className="mt-3 inline-flex text-[12px] font-semibold text-[#74898d]">첨부자료 원문 {item.referenceLabel ?? `PDF ${item.pdfPage}쪽`} 확인</span>}
               </div>
             </details>)}
           </div>
           {relatedEvidence.length > 0 && <div className="mt-4 rounded-xl border border-[#d8e6e5] bg-[#f4f9f8] px-4 py-3">
-            <p className="text-[13px] leading-6 text-[#5d7579]">{visibleRelatedCount === 0 ? "관련 근거자료가 더 있습니다. 추가로 확인하시겠어요?" : hasMoreEvidence ? "관련성이 높은 자료부터 추가로 표시했습니다." : "관련 근거자료를 모두 표시했습니다."}</p>
+            <p className="text-[13px] leading-6 text-[#5d7579]">{visibleRelatedCount === 0 ? "관련 근거자료가 더 있습니다. 추가로 확인하시겠어요?" : hasMoreEvidence ? "추가 자료를 출처 우선순위와 발행일 순으로 표시했습니다." : "관련 근거자료를 모두 표시했습니다."}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {hasMoreEvidence && <button type="button" onClick={() => setVisibleRelatedCount((count) => Math.min(count + 3, relatedEvidence.length))} className="inline-flex items-center gap-1.5 rounded-lg border border-[#b9dcd5] bg-white px-3 py-2 text-[12px] font-bold text-[#1e806f] transition hover:bg-[#e9f6f2]">관련 자료 더 보기 <ArrowDown size={14} /></button>}
               {visibleRelatedCount > 0 && <button type="button" onClick={() => setVisibleRelatedCount(0)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-bold text-[#71878b] transition hover:bg-white">추가 자료 접기 <ArrowUp size={14} /></button>}
             </div>
           </div>}
         </div>}
-        {recommendations.length > 0 && <FollowUpActions message={message} recommendations={recommendations} embedded={embedded} sendAction={sendAction} />}
       </div>
-      <p className="mt-3 text-[12px] leading-6 text-[#7f9498]">{isGptAnswer ? "AI가 표시된 근거자료를 바탕으로 작성했습니다." : "AI 연결 전 검색 답변입니다."} 내용·숫자·기한은 원문과 현행 기준을 확인해 주세요.</p>
+      <p className="mt-3 text-[12px] leading-6 text-[#7f9498]">{isGptAnswer ? "AI가 표시된 근거자료를 바탕으로 작성했습니다." : "내장 근거자료 검색 결과입니다."} 내용·숫자·기한은 원문과 현행 기준을 확인해 주세요.</p>
     </div>
   </div>;
 }
@@ -493,15 +520,44 @@ function FollowUpActions({ message, recommendations, embedded, sendAction }: {
     setNotice("");
   }
 
-  async function navigate(module: FollowUpModule) {
+  async function navigate(target: FollowUpRecommendation | FollowUpModule) {
     if (busy) return;
     setBusy(true);
     setError("");
     try {
-      const reply = await sendAction("navigate", { answerId: message.answerId, module });
+      const reply = await sendAction("navigate", {
+        answerId: message.answerId,
+        module: typeof target === "string" ? target : target.module,
+        ...(typeof target !== "string" && target.formId ? { formId: target.formId } : {}),
+      });
       if (!reply.ok) throw new Error(reply.error || "화면을 열지 못했습니다.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "화면 연결에 실패했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openWorkRegistration(topic: string) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("AI가 업무에 맞는 등록 메뉴를 선택하고 있습니다.");
+    try {
+      const reply = await sendAction("work-register", {
+        answerId: message.answerId,
+        module: "work",
+        question: message.question.slice(0, 500),
+        topic: topic.slice(0, 80),
+        answer: message.result.message.slice(0, 800),
+      });
+      if (!reply.ok) throw new Error(reply.error || "등록 화면을 열지 못했습니다.");
+      setNotice(reply.result?.registrationType === "choose"
+        ? "AI 연결을 확인하지 못해 업무 등록 메뉴를 열었습니다. 상황 등록 또는 일정 추가를 선택해 주세요."
+        : "선택된 등록 화면을 열었습니다. 내용을 확인한 뒤 저장해 주세요.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "등록 화면 연결에 실패했습니다.");
+      setNotice("");
     } finally {
       setBusy(false);
     }
@@ -520,7 +576,7 @@ function FollowUpActions({ message, recommendations, embedded, sendAction }: {
         topic,
         evidence,
         draft: {
-          title: topic === "risk" ? "위험성평가 업무" : "산업안전보건 업무 일정",
+          title: statedScheduleTitle(message.question, topic),
           date: statedDate(message.question),
           target: statedTarget(message.question),
           sourceQuestion: message.question,
@@ -590,12 +646,12 @@ function FollowUpActions({ message, recommendations, embedded, sendAction }: {
   }
 
   return <div className="mt-5 space-y-3 border-t border-[#e3eeee] pt-5" aria-label="답변 후 관련 업무 연결">
-    {!inShell && <div className="rounded-xl border border-[#c9dcf4] bg-[#f1f7ff] px-4 py-3 text-[12px] leading-5 text-[#294b65]">단독 창에서는 일정 저장과 화면 연결을 직접 실행할 수 없습니다. 통합 화면을 연 뒤 다시 질문해 주세요.</div>}
+    {!inShell && <div className="rounded-xl border border-[#c9dcf4] bg-[#f1f7ff] px-4 py-3 text-[12px] leading-5 text-[#294b65]">단독 창에서는 화면을 직접 연결할 수 없습니다. 통합 화면에서 업무 등록 메뉴를 선택해 주세요.</div>}
     {recommendations.filter((item) => !dismissed.includes(item.module)).map((item) => <div key={item.module} className="rounded-xl border border-[#d7e8e4] bg-[#f7fbfa] px-4 py-3">
       <p className="text-[13px] font-semibold leading-6 text-[#365960]">{item.question}</p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {inShell ? <button type="button" disabled={busy || saved} onClick={() => item.kind === "schedule" ? void preview(item.topic) : void navigate(item.module)} className="rounded-lg bg-[#138a76] px-3 py-2 text-[12px] font-bold text-white transition hover:bg-[#0d7463] disabled:opacity-50">예 · {item.buttonLabel}</button>
-          : <a href={integratedUrl(item.kind === "schedule" ? "work" : item.module)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-[#138a76] px-3 py-2 text-[12px] font-bold text-white">통합 화면 열기 <ExternalLink size={13} /></a>}
+        {inShell ? <button type="button" disabled={busy || saved} onClick={() => item.kind === "register" ? void openWorkRegistration(item.topic) : void navigate(item)} className="rounded-lg bg-[#138a76] px-3 py-2 text-[12px] font-bold text-white transition hover:bg-[#0d7463] disabled:opacity-50">{busy ? "등록 화면 연결 중..." : `예 · ${item.buttonLabel}`}</button>
+          : <a href={integratedUrl(item)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-[#138a76] px-3 py-2 text-[12px] font-bold text-white">통합 화면 열기 <ExternalLink size={13} /></a>}
         <button type="button" disabled={busy} onClick={() => decline(item.module)} className="rounded-lg border border-[#cfdedb] bg-white px-3 py-2 text-[12px] font-bold text-[#536f73] disabled:opacity-50">아니요</button>
       </div>
     </div>)}

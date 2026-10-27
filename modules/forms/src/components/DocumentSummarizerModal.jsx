@@ -3,11 +3,10 @@ import {
   X, UploadCloud, FileText, Sparkles, Check, 
   Settings, Key, AlertCircle, RefreshCw, FileUp, Clipboard, Eye
 } from 'lucide-react';
-import { 
-  getGeminiApiKey, 
-  setGeminiApiKey, 
-  summarizeWithBuiltInEngine, 
-  summarizeWithGemini,
+import {
+  serverAiAvailable,
+  summarizeWithBuiltInEngine,
+  summarizeWithServerAI,
   cleanRawText
 } from '../services/aiSummarizer';
 
@@ -122,6 +121,7 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
   const [summaryResults, setSummaryResults] = useState({});
   const [detectedChemicals, setDetectedChemicals] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
+  const [usedAI, setUsedAI] = useState(false);
   
   const fileInputRef = useRef(null);
 
@@ -133,6 +133,7 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
       setSummaryResults({});
       setDetectedChemicals([]);
       setStatusMessage('');
+      setUsedAI(false);
     }
   }, [isOpen]);
 
@@ -205,17 +206,17 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
     setIsProcessing(true);
     setStatusMessage('');
 
-    const apiKey = getGeminiApiKey();
-
     try {
       let results = null;
-
-      if (apiKey) {
-        setStatusMessage('✨ Google Gemini AI로 고성능 정밀 분석 중...');
-        results = await summarizeWithGemini(apiKey, formCode, inputText);
+      const aiReady = await serverAiAvailable().catch(() => false);
+      if (aiReady) {
+        setStatusMessage('✨ 서버 AI로 자료를 정리하는 중...');
+        results = await summarizeWithServerAI(formCode, inputText);
+        setUsedAI(true);
       } else {
         setStatusMessage('⚡ 지능형 내장 요약 엔진으로 분석 중...');
         results = summarizeWithBuiltInEngine(formCode, inputText);
+        setUsedAI(false);
       }
 
       setSummaryResults(results);
@@ -224,9 +225,10 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
       }
       setStatusMessage('✅ 분석 및 정리가 완료되었습니다! 결과를 확인하고 필요 시 수정한 후 서식에 반영하세요.');
     } catch (err) {
-      console.error('Gemini error, fallback to built-in:', err);
+      console.error('AI summary failed; using built-in summary:', err);
       try {
         const fallback = summarizeWithBuiltInEngine(formCode, inputText);
+        setUsedAI(false);
         setSummaryResults(fallback);
         if (fallback.detectedChemicals) {
           setDetectedChemicals(fallback.detectedChemicals);
@@ -408,12 +410,16 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 shadow-sm">
                 <Sparkles size={13} className="text-amber-500" />
-                Google Gemini AI 자동 요약
+                서버 AI 자동 요약
               </span>
               <span className="text-[11px] text-slate-500 hidden sm:inline">
                 * 자료를 분석하여 공문서 표준 개조식으로 간략히 정제합니다.
               </span>
             </div>
+
+            <p className="text-[11px] text-slate-600 w-full">
+              서버 AI를 사용할 때 입력 자료가 외부 모델 제공자에게 전송됩니다. 전송 전 이름·건강정보를 직접 지워 주세요. 서버도 주민번호·연락처 등 일부 패턴을 가립니다.
+            </p>
 
             <button
               type="button"
@@ -454,7 +460,7 @@ export default function DocumentSummarizerModal({ isOpen, onClose, formCode, onA
                   정리된 결과 미리보기 (이곳에서 직접 수정 후 반영할 수 있습니다)
                 </div>
                 <span className="text-[11px] text-slate-500">
-                  {useGemini && geminiKey ? 'Gemini AI 정리' : '내장 지능형 엔진 정리'}
+                  {usedAI ? '서버 AI 정리' : '내장 지능형 엔진 정리'}
                 </span>
               </div>
 

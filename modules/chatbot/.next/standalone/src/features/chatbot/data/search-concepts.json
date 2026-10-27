@@ -1,0 +1,203 @@
+[
+  {
+    "id": "industrial_accident",
+    "category": "accident",
+    "canonical": "산업재해",
+    "aliases": ["산재", "업무상 재해", "업무상재해", "일하다 다쳤", "근무 중 다쳤", "작업 중 다쳤", "넘어져서 다쳤"],
+    "related": ["재해 발생", "사고 발생", "일하다 다침", "업무 중 부상"],
+    "excluded": ["학교안전사고", "학생사고"]
+  },
+  {
+    "id": "workers_compensation",
+    "category": "accident",
+    "canonical": "산재보험 요양급여",
+    "aliases": ["산재 신청", "산재 보상", "요양급여 신청"],
+    "related": ["근로복지공단", "요양급여신청서"]
+  },
+  {
+    "id": "collapse_emergency",
+    "category": "firstaid",
+    "canonical": "실신 응급처치",
+    "aliases": ["쓰러", "실신", "사람이 쓰러짐", "근로자가 쓰러짐", "작업자가 쓰러짐", "정신을 잃", "의식을 잃", "기절", "의식이 없", "반응이 없", "호흡이 없"],
+    "related": ["호흡 없음", "심정지", "119", "심폐소생술", "AED"]
+  },
+  {
+    "id": "electric_shock_emergency",
+    "category": "firstaid",
+    "canonical": "감전 응급조치",
+    "aliases": ["감전됐", "감전된", "감전되었", "감전 사고", "전기에 감전", "전기 사고"],
+    "related": ["전원 차단", "119", "심폐소생술", "AED"]
+  },
+  {
+    "id": "cut_entrapment_emergency",
+    "category": "firstaid",
+    "canonical": "끼임 베임 절단사고 응급조치",
+    "aliases": ["손가락이 끼", "손이 끼", "기계에 손", "기계에 끼", "끼였", "칼에 베", "손을 베", "절단됐", "잘렸"],
+    "related": ["지혈", "절단 부위", "119"]
+  },
+  {
+    "id": "head_injury_emergency",
+    "category": "firstaid",
+    "canonical": "머리 부상 응급조치",
+    "aliases": ["머리를 다쳤", "머리를 부딪", "머리를 찧", "머리 부상", "머리 충돌", "두부 손상"],
+    "related": ["목뼈 손상", "머리와 목 고정"]
+  },
+  {
+    "id": "fracture_emergency",
+    "category": "firstaid",
+    "canonical": "골절 응급조치",
+    "aliases": ["팔이 부러", "다리가 부러", "손가락이 부러", "뼈가 부러", "골절 같", "골절 의심"],
+    "related": ["부목", "환자 고정"]
+  },
+  {
+    "id": "major_bleeding_emergency",
+    "category": "firstaid",
+    "canonical": "다량 출혈 응급조치",
+    "aliases": ["피가 많이 나", "피가 멈추지", "출혈이 심", "출혈이 많", "많은 출혈", "다량 출혈"],
+    "related": ["압박 지혈", "직접 압박"]
+  },
+  {
+    "id": "gas_inhalation_emergency",
+    "category": "firstaid",
+    "canonical": "가스 흡입 중독 응급조치",
+    "aliases": ["가스 중독", "가스를 마셨", "가스를 마셔", "가스 마시고", "가스 흡입", "유해가스 흡입", "연기 흡입", "가스 냄새를 맡고", "가스 냄새 맡고", "가스 때문에 어지러", "가스 누출"],
+    "related": ["질식", "신선한 공기", "호흡용 보호구", "공기호흡기"]
+  },
+  {
+    "id": "chemical_ingestion_emergency",
+    "category": "firstaid",
+    "canonical": "화학물질 섭취 사고",
+    "aliases": ["화학물질을 마셨", "화학물질을 삼켰", "세제를 마셨", "세제를 삼켰", "소독제를 마셨"],
+    "related": ["제품 용기"]
+  },
+  {
+    "id": "fire_emergency",
+    "category": "firstaid",
+    "canonical": "화재 발생 대피",
+    "aliases": ["불이 났", "불났", "화재가 났", "화재 발생"],
+    "related": ["대피", "119", "소방서", "작업 중지"]
+  },
+  {
+    "id": "msds",
+    "category": "msds",
+    "canonical": "물질안전보건자료",
+    "aliases": ["MSDS", "엠에스디에스"],
+    "related": ["화학제품", "화학물질", "세제", "세척제", "소독제"]
+  },
+  {
+    "id": "warning_label",
+    "category": "msds",
+    "canonical": "경고표지",
+    "aliases": ["경고표시", "라벨", "용기 표지", "제품 표지"],
+    "related": ["그림문자", "신호어", "유해 위험 문구"]
+  },
+  {
+    "id": "work_at_height",
+    "category": "fall",
+    "canonical": "고소작업",
+    "aliases": ["높은 곳", "높은 데", "높은 장소", "높은 곳 작업", "높은 데서 작업", "높은 장소 작업", "위에서 작업"],
+    "related": ["추락", "사다리", "작업발판", "안전난간", "안전대"]
+  },
+  {
+    "id": "health_examination",
+    "category": "health",
+    "canonical": "건강진단",
+    "aliases": ["건강검진", "일반 검진", "근로자 검진", "직원 검진"],
+    "related": ["일반건강진단", "특수건강진단", "배치 전 건강진단"]
+  },
+  {
+    "id": "cleaning_worker",
+    "canonical": "청소근로자",
+    "aliases": ["미화원", "청소하시는 분", "청소하는 분", "청소직원", "청소 노동자"],
+    "related": ["비사무직", "환경미화"]
+  },
+  {
+    "id": "food_service_worker",
+    "canonical": "급식종사자",
+    "aliases": ["조리사", "조리실무사", "급식실 직원", "급식 근로자"],
+    "related": ["비사무직", "학교 급식실"]
+  },
+  {
+    "id": "new_employee",
+    "category": "education",
+    "canonical": "신규 채용 근로자",
+    "aliases": ["신규 입사자", "신규 직원", "계약직", "첫 출근", "처음 출근"],
+    "related": ["채용 시 교육", "직무 배치 전"]
+  },
+  {
+    "id": "daily_worker",
+    "canonical": "일용근로자",
+    "aliases": ["일용직", "하루 일하는 사람", "단기 일용"],
+    "related": ["초단기 근로자", "1주일 이하 기간제근로자"]
+  },
+  {
+    "id": "safety_training",
+    "category": "education",
+    "canonical": "안전보건교육",
+    "aliases": ["산업안전교육", "안전교육", "보건교육"],
+    "related": ["채용 시 교육", "정기교육", "작업내용 변경 시 교육", "특별교육"]
+  },
+  {
+    "id": "risk_assessment",
+    "category": "risk",
+    "canonical": "위험성평가",
+    "aliases": ["위험 평가", "위험도 평가"],
+    "related": ["유해 위험요인", "감소대책", "정기평가", "수시평가", "최초평가"]
+  },
+  {
+    "id": "contract_work",
+    "category": "contractor",
+    "canonical": "도급",
+    "aliases": ["용역", "외주", "수급업체", "도급업체"],
+    "related": ["도급 협의체", "안전보건수준 평가", "업체 선정"]
+  },
+  {
+    "id": "supervisor",
+    "category": "supervisor",
+    "canonical": "관리감독자",
+    "aliases": ["현장 관리자", "작업 관리자"],
+    "related": ["관리감독자 교육", "지휘 감독"]
+  },
+  {
+    "id": "safety_committee",
+    "category": "committee",
+    "canonical": "산업안전보건위원회",
+    "aliases": ["산안위", "안전보건위원회"],
+    "related": ["근로자위원", "사용자위원", "정기회의"]
+  },
+  {
+    "id": "work_environment_measurement",
+    "category": "environment",
+    "canonical": "작업환경측정",
+    "aliases": ["작업 환경 측정", "유해인자 측정"],
+    "related": ["노출 측정", "측정기관"]
+  },
+  {
+    "id": "confined_space",
+    "category": "confined",
+    "canonical": "밀폐공간",
+    "aliases": ["밀폐 장소", "닫힌 공간", "맨홀 내부", "정화조 내부"],
+    "related": ["산소결핍", "질식", "가스측정", "송기마스크"]
+  },
+  {
+    "id": "heat_illness",
+    "category": "heat",
+    "canonical": "온열질환",
+    "aliases": ["더위 먹음", "열사병", "열탈진"],
+    "related": ["폭염", "체감온도", "휴식시간"]
+  },
+  {
+    "id": "musculoskeletal_disorder",
+    "category": "musculoskeletal",
+    "canonical": "근골격계질환",
+    "aliases": ["근골격계 질환", "근육 뼈 질환"],
+    "related": ["허리 통증", "손목 통증", "반복작업", "부담작업", "유해요인조사"]
+  },
+  {
+    "id": "personal_protective_equipment",
+    "category": "ppe",
+    "canonical": "개인보호구",
+    "aliases": ["보호구", "안전장비", "보호 장비"],
+    "related": ["안전모", "안전화", "보안경", "방진마스크", "안전대"]
+  }
+]

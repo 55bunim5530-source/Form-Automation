@@ -1,0 +1,30 @@
+{
+  "sourceTitle": "중대재해예방 안전보건 관리 가이드북",
+  "sourcePublisher": "서울특별시교육청 안전총괄담당관",
+  "sourceDate": "2023-12",
+  "sourceUrl": null,
+  "sourceSha256": "34e5f121c13f6ce434485f2cd3a15bdd6341ead438865133455b0667619cfd46",
+  "extraction": "kordoc HWP extraction; manually curated semantic chunks",
+  "deduplication": "Only the health-exam recognition and worker-duty passage was retained; the remaining guidance substantially overlapped the existing manual, regulation, training, risk, MSDS, and contractor indexes.",
+  "pages": [
+    {
+      "pdfPage": 1,
+      "referenceLabel": "HWP 과제 7 · 일반건강진단 인정",
+      "category": "health",
+      "searchTerms": [
+        "건강진단 인정",
+        "국민건강보험법",
+        "학교보건법",
+        "종합검진",
+        "검사 항목",
+        "증명서류",
+        "근로자 의무",
+        "과태료 5만원",
+        "과태료 15만원"
+      ],
+      "section": "일반건강진단으로 인정되는 검진과 근로자 의무",
+      "text": "국민건강보험법에 따른 건강검진, 학교보건법에 따른 건강검진, 산업안전보건 일반건강진단의 검사 항목을 모두 포함한 종합검진 등은 일반건강진단으로 인정된다. 근로자는 건강진단을 받고 결과를 증명하는 서류를 제출해야 하며, 가이드북은 건강진단에 관한 근로자 의무 위반 과태료를 5만~15만원으로 안내한다."
+    }
+  ],
+  "chunkCount": 1
+}

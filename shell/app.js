@@ -3041,13 +3041,13 @@ function performanceTimingHtml(t){
 /* 법제처 법령 조회 확장. 기존 업무 및 일정 계산을 변경하지 않는다. 외부 의존성 없음. */
 (() => {
  'use strict';
- const API='https://www.law.go.kr/DRF/';
+ const API='/api/law';
  const esc=v=>escapeHtml(String(v??''));
  const list=v=>v==null?[]:Array.isArray(v)?v:[v];
  const scalar=v=>v&&typeof v==='object'?String(v['#text']??v['#cdata-section']??v.content??''):String(v??'');
  const canon=v=>String(v??'').replace(/\s+/g,'').normalize('NFC');
  const now=()=>new Date().toISOString();
- let oc='',connection='미연결 · 인증값은 현재 창에서만 사용',candidateResults=[],viewerToken=0;
+ let configured=false,connection='서버 연결 상태 확인 중',candidateResults=[],viewerToken=0;
  const refs=m=>(m.legalReferences??=[]);
  function scrub(v){
    if(typeof v==='string')return v.replace(/([?&])OC=[^&#\s"<>]*/gi,'$1').replace(/\?&/g,'?');
@@ -3088,17 +3088,24 @@ function performanceTimingHtml(t){
  }
  function parseResponse(text){let data;try{data=JSON.parse(text)}catch{if(!/^\s*<\??(?:xml|Law|법령|Adm|행정|Error|error)/.test(text))throw Error('API가 JSON/XML 대신 안내·인증 페이지를 반환했습니다. 인증값과 API 이용 권한을 확인하세요.');data=xmlObject(text)}return data}
  async function request(path,params){
-   if(!oc.trim())throw Error('인증값 누락: 설정 → 업무원장 관리 → 법제처 API 연결에서 OC를 입력하세요.');
    if(navigator.onLine===false)throw Error('인터넷 연결이 끊겼습니다. 마지막 성공 캐시 또는 국가법령정보센터 링크를 사용하세요.');
-   const u=new URL(path+'.do',API);u.search=new URLSearchParams({OC:oc.trim(),type:'JSON',...params});
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),22000);
    try{
-     const res=await fetch(u,{mode:'cors',credentials:'omit',signal:controller.signal,cache:'no-store'});
-     if(!res.ok)throw Error(res.status===401||res.status===403?'인증 오류 또는 API 이용 권한 부족 (HTTP '+res.status+')':'API 응답 오류 (HTTP '+res.status+')');
-     const data=parseResponse(await res.text());
-     if(data.Error||data.error||data.errorCode||data.오류)throw Error('API 오류: '+scalar(data.Error?.message||data.error?.message||data.오류||data.message||data.errorCode));
+     const res=await fetch(API+'/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:path,params}),credentials:'omit',signal:controller.signal,cache:'no-store'});
+     const data=await res.json().catch(()=>({}));
+     if(!res.ok){if(res.status===503)configured=false;throw Error(data.error||'법제처 API 중계 오류 (HTTP '+res.status+')')}
+     configured=true;
      return scrub(data);
-   }catch(e){if(oc&&e.message?.includes(oc))e.message=e.message.replaceAll(oc,'[인증값 숨김]');if(e.name==='AbortError')throw Error('요청 시간 초과 (20초). 다시 조회하거나 원문 링크를 이용하세요.');if(e instanceof TypeError)throw Error('브라우저에서 응답을 읽지 못했습니다. 인터넷·인증/권한·CORS 정책을 확인하세요. CORS 여부는 개발자 도구 콘솔에서 확인할 수 있습니다. 별도 중계 없이 직접 조회할 수 없는 환경에서는 국가법령정보센터 링크를 이용하세요.');throw e}finally{clearTimeout(timer)}
+   }catch(e){if(e.name==='AbortError')throw Error('요청 시간 초과 (22초). 다시 조회하거나 원문 링크를 이용하세요.');if(e instanceof TypeError)throw Error('로컬 법령 API 서버에 연결하지 못했습니다. 프로그램을 다시 실행해 주세요.');throw e}finally{clearTimeout(timer)}
+ }
+ async function refreshConnection(){
+   try{
+     const res=await fetch(API+'/status',{cache:'no-store'}),data=await res.json();
+     configured=!!data.configured;
+     connection=configured?'서버 인증값 설정됨 · 연결 테스트를 실행해 주세요.':'서버에 법제처 API 인증값이 설정되지 않았습니다.';
+   }catch{configured=false;connection='로컬 법령 API 서버 연결을 확인해 주세요.'}
+   const status=document.getElementById('law-connection');if(status)status.textContent=connection;
+   return configured;
  }
  async function search(name,kind='law'){
    const rows=[];let page=1,total=0;
@@ -3166,7 +3173,7 @@ function performanceTimingHtml(t){
  }
  function status(r){return {candidate:'미검증 후보',fetched:'원문 확인 · 담당자 검토 대기',confirmed:'담당자 근거 검토 완료',changed:'법령 변경 검토 필요',needs_review:'근거 확인 필요'}[r.reviewStatus]||'근거 확인 필요'}
  function section(m){return `<section class="detail-section law-section" data-law-section="${esc(m.taskCode)}"><h4>관련 법령 근거</h4><p class="subtle">기존 지침·매뉴얼 근거와 담당자 메모는 위 업무정보에 보존됩니다. API 원문은 별도 열람창에 표시합니다.</p>${refs(m).length?refs(m).map((r,i)=>`<div class="law-reference"><strong>${esc(label(r))}</strong> <span class="badge review">${esc(status(r))}</span><p class="subtle">${esc(r.kind==='admrul'?'행정규칙':'법령')} · ID ${esc(r.lawId||'미확인')} · 시행일 ${esc(r.effectiveDate||'미확인')} · 마지막 조회 ${esc(r.lastFetchedAt||'없음')}</p><div class="law-actions"><button class="btn" data-law-view="${i}" data-code="${esc(m.taskCode)}">법령 원문 보기</button><button class="btn" data-law-refresh="${i}" data-code="${esc(m.taskCode)}">최신 법령 다시 조회</button><a class="btn" target="_blank" rel="noopener noreferrer" href="${esc(originalLink(r))}">국가법령정보센터에서 보기</a></div></div>`).join(''):'<p>근거 확인 필요 · 연결된 법령이 없습니다.</p>'}<button class="btn" data-law-manage="${esc(m.taskCode)}">법령 연결·후보 검토</button></section>`}
- function connectionArea(){return `<section class="panel law-settings"><h3>법제처 API 연결</h3><div class="law-actions"><label for="law-oc">API 인증값(OC)</label><input id="law-oc" type="password" autocomplete="off" placeholder="현재 창에서만 사용" aria-label="API 인증값 OC"><button class="btn" data-law-connect>연결 테스트</button><button class="btn" data-law-disconnect>인증값 지우기</button></div><p id="law-connection" role="status">${esc(connection)}</p><p class="subtle">인증값은 메모리에만 보관하며 창을 닫으면 사라집니다. CSV·JSON 백업에 포함하지 않습니다.</p><button class="btn" data-law-bulk>전체 업무 법령 연결 후보 생성</button><p id="law-bulk-status" role="status"></p></section>`}
+ function connectionArea(){return `<section class="panel law-settings"><h3>법제처 API 연결</h3><div class="law-actions"><button class="btn" data-law-connect>연결 테스트</button></div><p id="law-connection" role="status">${esc(connection)}</p><p class="subtle">인증값은 로컬 서버 환경변수에만 설정합니다. 화면·백업에는 저장하지 않습니다.</p><button class="btn" data-law-bulk>전체 업무 법령 연결 후보 생성</button><p id="law-bulk-status" role="status"></p></section>`}
  function manager(code){
    const m=app.data.taskMaster.find(x=>x.taskCode===code);if(!m)return;candidateResults=[];
    modal('법령 연결 · '+esc(m.taskName),`<div id="law-manager" data-code="${esc(code)}"><p>기존 근거: ${esc(m.sourceName)} · ${esc(m.sourceArticle)} · ${esc(m.sourcePage)}<br>기존 검토상태: ${esc(m.legalVerification)} / ${esc(m.verificationStatus)}</p><div class="notice">후보 생성·검색은 근거 확정이 아닙니다. API 원문을 조회한 뒤 적용 대상·개정 내용·경과규정을 검토하고 ‘근거 검토 완료’를 누르세요. 일정·기한은 자동 변경하지 않습니다.</div><button class="btn" data-law-derive="${esc(code)}">기존 근거에서 후보 생성</button><div class="law-actions"><select id="law-kind" aria-label="법령 종류"><option value="law">법령</option><option value="admrul">행정규칙 (고시·훈령·예규)</option></select><input id="law-query" placeholder="정확한 법령명" aria-label="법령명"><button class="btn" data-law-search="${esc(code)}">법령 검색</button></div><div class="law-actions"><label>조 <input id="law-article" inputmode="numeric" size="4" aria-label="조 번호"></label><label>의 <input id="law-branch" inputmode="numeric" size="3" aria-label="조 가지번호"></label><label>항 <input id="law-paragraph" inputmode="numeric" size="3" aria-label="항 번호"></label><label>호 <input id="law-item" inputmode="numeric" size="3" aria-label="호 번호"></label><label>목 <input id="law-subitem" size="3" aria-label="목"></label></div><p class="subtle">전체 원문은 조 번호를 비워 조회합니다. 조·항·호·목을 입력하면 응답에서 해당 번호를 검증합니다.</p><div id="law-search-results" role="status"></div><h4>연결정보 / 후보</h4>${refs(m).map((r,i)=>`<div class="law-reference"><b>${esc(label(r))}</b> · ${esc(status(r))}<p>${esc(r.provenance||'사용자 선택')}<br>ID ${esc(r.lawId||'미확인')} · 시행일 ${esc(r.effectiveDate||'미확인')}</p><div class="law-actions"><button class="btn" data-law-resolve="${i}" data-code="${esc(code)}">이 법령명으로 검색·조문 확인</button><button class="btn" data-law-view="${i}" data-code="${esc(code)}">원문 보기</button><button class="btn" data-law-approve="${i}" data-code="${esc(code)}" ${r.cache&&r.reviewStatus!=='confirmed'?'':'disabled'}>근거 검토 완료</button><button class="btn" data-law-remove="${i}" data-code="${esc(code)}">연결 삭제</button></div></div>`).join('')||'<p>근거 확인 필요</p>'}</div>`,'<button class="btn" data-close>닫기</button>','wide');
@@ -3220,14 +3227,13 @@ function performanceTimingHtml(t){
    }validateBackup({tasks:[],taskMaster:items});window.pendingCSV=items;
    modal('CSV 가져오기 미리보기',`<p>정상 ${items.length}행 · sourceUrl 및 legalReferences 보존. 기존 업무 일정은 유지됩니다.</p><div class="preview-box">${items.slice(0,88).map(x=>`<p>${esc(x.taskCode)} · ${esc(x.taskName)} · 법령 ${refs(x).length}건</p>`).join('')}</div><label>가져오기 방식 <select id="csvMode"><option value="replace">기존 원장 전체 교체</option><option value="append">기존 원장에 추가 (중복 코드 제외)</option></select></label>`,'<button class="btn" data-close>취소</button><button class="btn primary" data-law-apply-csv>적용</button>','wide');
  }catch(e){toast('CSV 가져오기 중단: '+e.message)}})};
- // 인증값은 이 확장의 closure에만 존재한다. app.data에는 기록하지 않는다.
- document.addEventListener('change',e=>{if(e.target.id==='law-oc'){oc=e.target.value.trim();connection='인증값 입력됨 · 연결 테스트 필요';const el=document.getElementById('law-connection');if(el)el.textContent=connection}if(e.target.id==='law-ref-select'){const v=document.getElementById('law-viewer');viewer(v.dataset.code,+e.target.value)}});
+ // 법령 API 인증값은 로컬 서버에서만 읽고 화면에는 전달하지 않는다.
+ document.addEventListener('change',e=>{if(e.target.id==='law-ref-select'){const v=document.getElementById('law-viewer');viewer(v.dataset.code,+e.target.value)}});
  document.addEventListener('click',async e=>{
    const b=e.target.closest('button');if(!b||![...b.attributes].some(a=>a.name.startsWith('data-law-')))return;
    b.disabled=true;try{
      const code=b.dataset.code,m=code?app.data.taskMaster.find(x=>x.taskCode===code):null;
-     if(b.hasAttribute('data-law-connect')){oc=document.getElementById('law-oc').value.trim();connection='연결 테스트 중…';document.getElementById('law-connection').textContent=connection;const rows=await search('산업안전보건법');if(!rows.some(x=>canon(x.lawName)===canon('산업안전보건법')))throw Error('검색 응답은 받았으나 산업안전보건법을 확인하지 못했습니다.');connection='연결 성공 · 산업안전보건법 실제 검색 응답 확인 · '+new Date().toLocaleString('ko-KR');document.getElementById('law-connection').textContent=connection;document.dispatchEvent(new CustomEvent('safety-law-connected'))}
-     else if(b.hasAttribute('data-law-disconnect')){oc='';connection='인증값 삭제됨 · 미연결';document.getElementById('law-oc').value='';document.getElementById('law-connection').textContent=connection}
+     if(b.hasAttribute('data-law-connect')){await refreshConnection();if(!configured)throw Error(connection);connection='연결 테스트 중…';document.getElementById('law-connection').textContent=connection;const rows=await search('산업안전보건법');if(!rows.some(x=>canon(x.lawName)===canon('산업안전보건법')))throw Error('검색 응답은 받았으나 산업안전보건법을 확인하지 못했습니다.');connection='연결 성공 · 산업안전보건법 실제 검색 응답 확인 · '+new Date().toLocaleString('ko-KR');document.getElementById('law-connection').textContent=connection;document.dispatchEvent(new CustomEvent('safety-law-connected'))}
      else if(b.hasAttribute('data-law-bulk')){let added=0;for(const x of app.data.taskMaster)added+=deriveInto(x);await app.save();const connected=app.data.taskMaster.filter(x=>refs(x).length).length;document.getElementById('law-bulk-status').textContent='전체 '+app.data.taskMaster.length+'개 검토 · 신규 후보 '+added+'건 · 후보/연결 보유 '+connected+'개 · 근거 확인 필요 '+(app.data.taskMaster.length-connected)+'개. API 미검증 후보이며 자동 확정하지 않았습니다.'}
      else if(b.hasAttribute('data-law-manage'))manager(b.dataset.lawManage);
      else if(b.hasAttribute('data-law-derive')){deriveInto(app.data.taskMaster.find(x=>x.taskCode===b.dataset.lawDerive));await app.save();manager(b.dataset.lawDerive)}
@@ -3245,9 +3251,9 @@ function performanceTimingHtml(t){
      else if(b.hasAttribute('data-law-apply-csv')){const mode=document.getElementById('csvMode').value;app.data.taskMaster=mode==='replace'?window.pendingCSV:[...app.data.taskMaster,...window.pendingCSV.filter(x=>!app.data.taskMaster.some(y=>y.taskCode===x.taskCode))];await app.save();closeOverlay();render();toast('법령 연결정보를 포함한 CSV를 반영했습니다.')}
    }catch(error){if(b.hasAttribute('data-law-connect')){connection='연결 실패: '+error.message;const el=document.getElementById('law-connection');if(el)el.textContent=connection}else{const box=document.getElementById('law-search-results');if(box)box.textContent=error.message;toast(error.message)}}finally{b.disabled=false}
  });
- initialize();if(window.safetyReady)render();
+ initialize();if(window.safetyReady)render();refreshConnection();
 
- // Deadline integration shares the existing OC, transport, parser and original-text validator.
+ // Deadline integration shares the server transport, parser and original-text validator.
  async function versions(name){
    const all=[];let total=0;
    for(let page=1;page<=20;page++){
@@ -3285,7 +3291,7 @@ function performanceTimingHtml(t){
  }
 
  // 로컬 검증 및 장애 진단을 위한 읽기 전용 함수. 인증값은 노출하지 않는다.
- window.safetyLaw={jo,derive,parseCitation,parseResponse,search,body,section,originalLink,scrub,fetchAt,versions,connectionInfo:()=>({configured:!!oc,online:navigator.onLine!==false})};
+ window.safetyLaw={jo,derive,parseCitation,parseResponse,search,body,section,originalLink,scrub,fetchAt,versions,connectionInfo:()=>({configured,online:navigator.onLine!==false})};
 })();
 
 ;
@@ -3484,7 +3490,7 @@ function performanceTimingHtml(t){
  async function refreshIncident(id,force=true){
    const e=app.data.triggerEvents.find(e=>e.id===id);if(!e)return;
    const input=signature(e);e.legalBundles??={};let failures=0;
-   if(!safetyLaw.connectionInfo().configured){for(const phase of incidentPlan(e).map(p=>p.stage).filter(p=>REGISTRY[p]))e.legalBundles[phase]={...e.legalBundles[phase],ok:false,error:'법제처 API 인증값(OC) 미입력: 설정의 법제처 API 연결에서 입력 후 재조회하세요.',lastAttemptAt:stamp()};syncIncident(e);await app.save();render();return {failures:1};}
+   if(!safetyLaw.connectionInfo().configured){for(const phase of incidentPlan(e).map(p=>p.stage).filter(p=>REGISTRY[p]))e.legalBundles[phase]={...e.legalBundles[phase],ok:false,error:'법제처 API 인증값이 로컬 서버에 설정되지 않았습니다. 설정 후 재조회하세요.',lastAttemptAt:stamp()};syncIncident(e);await app.save();render();return {failures:1};}
    for(const phase of incidentPlan(e).map(p=>p.stage).filter(p=>REGISTRY[p])){
      const spec=REGISTRY[phase],asOf=spec.asOf?spec.asOf(e):baseFor(e,phase);if(!validDay(asOf))continue;
      const refs=[...spec.refs,...(['months','days','years'].includes(spec.kind)?COMMON:[])],old=e.legalBundles[phase];

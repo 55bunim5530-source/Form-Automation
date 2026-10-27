@@ -3,6 +3,8 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { handleApi } from './api.mjs';
+import { isPublicStaticPath } from './static-files.mjs';
 
 const launcherDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(launcherDir, '..');
@@ -13,6 +15,21 @@ const pidFile = path.join(pidsDir, 'launcher.json');
 const mainUrl = 'http://127.0.0.1:8080/shell/app.html';
 const children = [];
 const servers = [];
+
+function loadLocalSecrets() {
+  const file = path.join(projectRoot, '.env.local');
+  if (!fs.existsSync(file)) return;
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/u);
+  for (const line of lines) {
+    const match = line.match(/^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$/u);
+    if (!match) continue;
+    let value = match[2];
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+    if (process.env[match[1]] === undefined) process.env[match[1]] = value;
+  }
+}
+
+loadLocalSecrets();
 
 fs.mkdirSync(logsDir, { recursive: true });
 fs.mkdirSync(pidsDir, { recursive: true });
@@ -41,13 +58,27 @@ function timestamp() {
 
 function createStaticServer(root, port, label) {
   const resolvedRoot = path.resolve(root);
+  const realRoot = fs.realpathSync(resolvedRoot);
   const server = http.createServer((request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.setHeader('Access-Control-Allow-Origin', '*');
+    if (port === 8080 && request.url?.startsWith('/api/')) {
+      void handleApi(request, response).catch(error => {
+        console.error('[API] 처리 실패:', error?.message || error);
+        if (!response.headersSent) response.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        if (!response.writableEnded) response.end(JSON.stringify({ error: '서버 요청을 처리하지 못했습니다.' }));
+      });
+      return;
+    }
     if (request.url === '/__health') {
       response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
       response.end(JSON.stringify({ ok: true, service: label, time: new Date().toISOString() }));
+      return;
+    }
+
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.writeHead(405, { Allow: 'GET, HEAD' });
+      response.end();
       return;
     }
 
@@ -60,14 +91,22 @@ function createStaticServer(root, port, label) {
       return;
     }
     const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
-    let target = path.resolve(resolvedRoot, relative);
-    if (target !== resolvedRoot && !target.startsWith(resolvedRoot + path.sep)) {
-      response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-      response.end('접근할 수 없는 경로입니다.');
+    if (!isPublicStaticPath(port, relative)) {
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.end('파일을 찾을 수 없습니다.');
+      return;
+    }
+    const target = path.resolve(resolvedRoot, relative);
+    if (!target.startsWith(resolvedRoot + path.sep)) {
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.end('파일을 찾을 수 없습니다.');
       return;
     }
     try {
-      if (fs.statSync(target).isDirectory()) target = path.join(target, 'index.html');
+      // Recheck the real file path so a symlink under a public directory
+      // cannot expose a private file elsewhere in the project.
+      const realRelative = path.relative(realRoot, fs.realpathSync(target)).split(path.sep).join('/');
+      if (!isPublicStaticPath(port, realRelative)) throw new Error('Private static path');
     } catch {
       response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       response.end('파일을 찾을 수 없습니다.');
@@ -100,9 +139,13 @@ function spawnService(label, command, args, cwd, env = {}) {
   const logPath = path.join(logsDir, `${label}.log`);
   const log = fs.openSync(logPath, 'a');
   fs.writeSync(log, `\n[${timestamp()}] ${label} 시작\n`);
+  const childEnv = { ...process.env, ...env };
+  delete childEnv.OPENROUTER_API_KEY;
+  delete childEnv.LAW_API_OC;
+  delete childEnv.LAW_OC;
   const child = spawn(command, args, {
     cwd,
-    env: { ...process.env, ...env },
+    env: childEnv,
     stdio: ['ignore', log, log],
     windowsHide: true,
   });
@@ -210,7 +253,7 @@ try {
     throw new Error('챗봇 운영 빌드가 없습니다. README의 재빌드 절차를 실행해 주세요.');
   }
   const chatbot = spawnService('chatbot', process.execPath, ['server.js'], standaloneDir, {
-    NODE_ENV: 'production', PORT: '3001', HOSTNAME: '127.0.0.1'
+    NODE_ENV: 'production', PORT: '3001', HOSTNAME: '127.0.0.1', INTERNAL_API_BASE_URL: 'http://127.0.0.1:8080'
   });
   chatbot.once('error', (error) => console.error('[오류] 챗봇 실행 실패:', error.message));
 

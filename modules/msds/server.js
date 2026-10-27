@@ -9,6 +9,12 @@ const { renderPdf, PdfRenderError } = require('./pdf-download');
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 const PUBLIC_DIR = __dirname;
+const PUBLIC_FILES = new Set([
+  '/index.html',
+  '/vendor/sheetjs/xlsx.full.min.js',
+  '/vendor/pdfjs/pdf.min.js',
+  '/vendor/pdfjs/pdf.worker.min.js',
+]);
 const MAX_REQUEST_BYTES = 30 * 1024 * 1024;
 const ALLOWED_ORIGINS = new Set([
   `http://localhost:${PORT}`,
@@ -144,7 +150,7 @@ const MOCK_CHEMICAL_DATABASE = {
   }
 };
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   // Restrict browser API access to the local app origins.
   const requestOrigin = req.headers.origin;
   if (requestOrigin && ALLOWED_ORIGINS.has(requestOrigin)) {
@@ -294,7 +300,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // NEW ENDPOINT: /api/proxy-openrouter
+  // The integrated launcher owns the OpenRouter credential and model choice.
+  // Keep this same-origin endpoint so the MSDS page never receives either value.
   if (parsedReqUrl.pathname === '/api/proxy-openrouter' && req.method === 'POST') {
     let body = '';
     let tooLarge = false;
@@ -307,57 +314,47 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: 'Request body too large' }));
       }
     });
-    req.on('end', () => {
+    req.on('end', async () => {
       if (tooLarge) return;
       try {
         const payload = JSON.parse(body);
-        const apiKey = payload.apiKey;
-        const model = payload.model || 'google/gemini-2.0-flash-001';
-        const messages = payload.messages || [];
-        const responseFormat = payload.response_format;
-
-        if (!apiKey) {
+        if (!Array.isArray(payload.messages) || !payload.messages.length) {
           res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ error: 'OpenRouter API Key is required' }));
+          res.end(JSON.stringify({ error: { message: 'AI 요청 내용이 올바르지 않습니다.' } }));
           return;
         }
-
-        const openrouterReqData = JSON.stringify({
-          model,
-          messages,
-          ...(responseFormat ? { response_format: responseFormat } : {})
-        });
-
-        const orReq = https.request('https://openrouter.ai/api/v1/chat/completions', {
+        const gateway = new URL('/api/ai/msds', process.env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8080');
+        const gatewayRes = await fetch(gateway, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'http://localhost:3000',
-            'X-Title': 'School MSDS Smart System',
-            'Content-Length': Buffer.byteLength(openrouterReqData)
-          }
-        }, (orRes) => {
-          let orBody = '';
-          orRes.on('data', chunk => { orBody += chunk; });
-          orRes.on('end', () => {
-            res.writeHead(orRes.statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(orBody);
-          });
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: payload.messages,
+            ...(payload.response_format ? { response_format: payload.response_format } : {}),
+            ...(payload.max_tokens ? { max_tokens: payload.max_tokens } : {})
+          }),
+          signal: AbortSignal.timeout(120_000)
         });
-
-        orReq.on('error', (err) => {
-          res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ error: 'OpenRouter request failed', details: err.message }));
-        });
-
-        orReq.write(openrouterReqData);
-        orReq.end();
+        res.writeHead(gatewayRes.status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(await gatewayRes.text());
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+        const invalidJson = err instanceof SyntaxError;
+        res.writeHead(invalidJson ? 400 : 502, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: { message: invalidJson ? '올바른 JSON 요청이 아닙니다.' : 'AI 서버에 연결할 수 없습니다.' } }));
       }
     });
+    return;
+  }
+
+  if (parsedReqUrl.pathname === '/api/ai-status' && req.method === 'GET') {
+    try {
+      const gateway = new URL('/api/ai/status', process.env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8080');
+      const gatewayRes = await fetch(gateway, { signal: AbortSignal.timeout(10_000) });
+      res.writeHead(gatewayRes.status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(await gatewayRes.text());
+    } catch {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ configured: false, features: { msds: { configured: false } }, error: 'AI 서버에 연결할 수 없습니다.' }));
+    }
     return;
   }
 
@@ -394,6 +391,17 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', () => {
       if (tooLarge) return;
+      let tempFilePath = null;
+      const cleanupTempPdf = () => {
+        if (!tempFilePath) return true;
+        try {
+          fs.rmSync(tempFilePath, { force: true, maxRetries: 3, retryDelay: 100 });
+          return true;
+        } catch (cleanupError) {
+          console.error('Temporary MSDS PDF cleanup failed:', cleanupError);
+          return false;
+        }
+      };
       try {
         const payload = JSON.parse(body);
         const base64Data = payload.pdfBase64;
@@ -404,20 +412,21 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        // Save base64 to uploads folder for later access via QR
+        // Keep the PDF only while extracting; GHS images still use uploads.
         const fileName = `msds_${Date.now()}.pdf`;
         const uploadDir = path.join(__dirname, 'uploads');
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-        const tempFilePath = path.join(uploadDir, fileName);
+        tempFilePath = path.join(uploadDir, fileName);
         fs.writeFileSync(tempFilePath, Buffer.from(base64Data, 'base64'));
 
         // Run python script
         const scriptPath = path.join(__dirname, 'extract_table.py');
         execFile('python', [scriptPath, tempFilePath], { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-          // Clean up temp file (REMOVED: we need to keep it for QR code access)
-          // if (fs.existsSync(tempFilePath)) {
-          //   fs.unlinkSync(tempFilePath);
-          // }
+          if (!cleanupTempPdf()) {
+            res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: 'Temporary PDF cleanup failed' }));
+            return;
+          }
 
           if (error) {
             console.error('Python Error:', stderr);
@@ -428,7 +437,6 @@ const server = http.createServer((req, res) => {
 
           try {
             const result = JSON.parse(stdout);
-            result.pdf_url = `/uploads/${fileName}`; // Return the URL of the saved PDF
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
             res.end(JSON.stringify(result));
           } catch (parseErr) {
@@ -437,6 +445,7 @@ const server = http.createServer((req, res) => {
           }
         });
       } catch (e) {
+        cleanupTempPdf();
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
       }
@@ -576,6 +585,16 @@ const server = http.createServer((req, res) => {
   } catch (_) {
     res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('잘못된 파일 경로입니다.');
+    return;
+  }
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { 'Allow': 'GET, HEAD' });
+    res.end();
+    return;
+  }
+  if (!PUBLIC_FILES.has(requestedPath)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('파일을 찾을 수 없습니다.');
     return;
   }
   const filePath = path.resolve(PUBLIC_DIR, `.${requestedPath}`);

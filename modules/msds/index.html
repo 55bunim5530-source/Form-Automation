@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>산업안전 안심봇 - MSDS 업무지원</title>
 <!-- External Libraries -->
-<script src="/vendor/qrcodejs/qrcode.min.js"></script>
 <script src="/vendor/sheetjs/xlsx.full.min.js"></script>
 <script src="/vendor/pdfjs/pdf.min.js"></script>
 <script>
@@ -420,7 +419,7 @@ table:not(#legacyTable) th { width: 22%; }
     <h1>🤖 산업안전 안심봇 ＞ 📋 MSDS·유해물질 스마트 관리</h1>
   </div>
   <div class="header-tools">
-    <button onclick="openApiConfigModal()">⚙️ API 설정</button>
+    <button onclick="openApiConfigModal()">⚙️ AI 연결 상태</button>
   </div>
 </header>
 <span id="apiKeyStatusText" style="display:none;"></span>
@@ -592,7 +591,7 @@ table:not(#legacyTable) th { width: 22%; }
 
   <!-- AI Recognition Results -->
   <div id="productResult" class="card hidden">
-    <h3>🤖 Gemini AI 제품 식별 결과</h3>
+    <h3>🤖 AI 제품 식별 결과</h3>
     <table>
       <tr><th>제품명</th><td id="resProductName">-</td></tr>
       <tr><th>제조사 / 수입자</th><td id="resManufacturer">-</td></tr>
@@ -768,9 +767,9 @@ table:not(#legacyTable) th { width: 22%; }
 <section id="stage3" class="hidden">
   <h2>③ 관리조치</h2>
 
-  <!-- Gemini MSDS Parsed Analysis -->
+  <!-- MSDS Parsed Analysis -->
   <div class="card">
-    <h3>🔬 Gemini AI MSDS 16개 항목 구조화 분석 결과</h3>
+    <h3>🔬 AI MSDS 16개 항목 구조화 분석 결과</h3>
     <table id="msdsAnalysisTable">
       <tr><th>유해성·위험성</th><td id="anHazard">-</td></tr>
       <tr style="display: none;"><th>예방</th><td id="anPrevention">-</td></tr>
@@ -983,7 +982,7 @@ table:not(#legacyTable) th { width: 22%; }
     <h3 id="finishProductName">제품 관리 등록이 최종 완료되었습니다.</h3>
     <p>학교 현장의 안전보건 조치와 관계 법령 요구사항이 이행 처리되었습니다.</p>
     <table>
-      <tr><th>제품 확인 (Gemini AI)</th><td><span class="badge ok">완료</span></td></tr>
+      <tr><th>제품 확인 (AI)</th><td><span class="badge ok">완료</span></td></tr>
       <tr><th>공식 MSDS verification</th><td><span class="badge ok">완료</span></td></tr>
       <tr><th>유해물질 관리대장</th><td><span class="badge ok">완료</span></td></tr>
       <tr><th>GHS 경고표지 & 관리요령</th><td><span class="badge ok">완료</span></td></tr>
@@ -997,121 +996,22 @@ table:not(#legacyTable) th { width: 22%; }
 
 </main>
 
-<!-- Modal 1: API Config Modal -->
+<!-- Modal 1: AI server status -->
 <div id="apiConfigModal" class="modal-overlay hidden">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>⚙️ AI 분석 엔진 및 API 키 설정</h3>
+      <h3>⚙️ AI 연결 상태</h3>
       <button class="close-btn" onclick="closeApiConfigModal()">&times;</button>
     </div>
-
-    <!-- AI Engine Config (OpenRouter / Gemini) -->
     <div class="card">
-      <h4>AI 분석 엔진 선택</h4>
-      
-      <label style="font-weight:bold; color:#1864ab;">AI 제공자 (Provider) 선택</label>
-      <div style="display:flex; gap:10px; margin-bottom:14px; margin-top:6px;">
-        <button type="button" id="tabOpenRouter" onclick="selectAiProvider('openrouter')" style="flex:1; padding:10px 14px; font-weight:bold; font-size:0.95rem; border-radius:6px; border:2px solid #1971c2; background:#1971c2; color:#fff; cursor:pointer; transition:all 0.2s;">
-          🌐 Openrouter API
-        </button>
-        <button type="button" id="tabGemini" onclick="selectAiProvider('gemini')" style="flex:1; padding:10px 14px; font-weight:bold; font-size:0.95rem; border-radius:6px; border:1px solid #ced4da; background:#f8f9fa; color:#495057; cursor:pointer; transition:all 0.2s;">
-          ⚡ Gemini API
-        </button>
-      </div>
-      <input type="hidden" id="selectedAiProvider" value="openrouter">
-
-      <!-- OpenRouter Settings Box -->
-      <div id="openrouterConfigBox" style="background:#f1f8ff; padding:16px; border-radius:8px; border:1.5px solid #a5d8ff; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <label style="font-weight:bold; color:#0b7285; font-size:0.95rem;">🌐 OpenRouter API Key</label>
-          <a href="https://openrouter.ai/keys" target="_blank" style="font-size:0.8rem; color:#1971c2; text-decoration:underline; font-weight:bold;">
-            🔑 openrouter.ai/keys 에서 발급받기 ↗
-          </a>
-        </div>
-        <input type="password" id="cfgOpenRouterKey" placeholder="sk-or-v1-..." style="background:#fff; margin-top:2px;">
-        <p style="font-size:0.8rem; color:#555; margin-top:4px; margin-bottom:10px;">
-          💡 입력하신 API 키는 외부로 유출되지 않으며 사용자 브라우저에 안전하게 저장됩니다.
-        </p>
-
-        <label style="font-weight:bold; color:#0b7285; margin-top:6px;">OpenRouter 모델 선택</label>
-        <select id="cfgOpenRouterModel" onchange="handleOpenRouterModelChange(this)" style="background:#fff; margin-top:4px;">
-          <option value="google/gemini-2.0-flash-001">google/gemini-2.0-flash-001 (추천: 초고속 비전 & 최저비용)</option>
-          <option value="google/gemini-flash-1.5">google/gemini-flash-1.5 (안정적 멀티모달)</option>
-          <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet (최고 성능 문서/표 정밀 분석)</option>
-          <option value="openai/gpt-4o-mini">openai/gpt-4o-mini (경량 고속 비전)</option>
-          <option value="deepseek/deepseek-chat">deepseek/deepseek-chat (고성능 경제적 텍스트)</option>
-          <option value="meta-llama/llama-3.3-70b-instruct">meta-llama/llama-3.3-70b-instruct (고성능 오픈 모델)</option>
-          <option value="custom">직접 모델명 입력...</option>
-        </select>
-        <input type="text" id="cfgOpenRouterCustomModel" placeholder="예: google/gemini-2.0-flash-001" class="hidden" style="margin-top:6px; background:#fff;">
-
-        <div class="actions" style="margin-top:12px;">
-          <button type="button" onclick="testOpenRouterConnection()">🌐 OpenRouter 연결 테스트</button>
-        </div>
-        <div id="openrouterTestStatus" class="help" style="margin-top:8px;"></div>
-      </div>
-
-      <!-- Gemini Direct Settings Box -->
-      <div id="geminiConfigBox" class="hidden" style="background:#f8f9fa; padding:16px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <label style="font-weight:bold; color:#333;">⚡ Google Gemini API Key</label>
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:0.8rem; color:#1971c2; text-decoration:underline;">
-            🔑 Google AI Studio 에서 발급 ↗
-          </a>
-        </div>
-        <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." style="background:#fff; margin-top:2px;">
-        
-        <label style="font-weight:bold; margin-top:10px;">Gemini 모델명 (Google AI Studio 공식 최신)</label>
-        <select id="cfgGeminiModel" style="background:#fff; margin-top:4px;">
-          <option value="gemini-3.8-flash">gemini-3.8-flash (구글 공식 최신 표준 · 고속 권장)</option>
-        </select>
-
-        <div class="actions" style="margin-top:12px;">
-          <button type="button" onclick="testGeminiConnection()">⚡ Gemini 연결 테스트</button>
-        </div>
-        <div id="geminiTestStatus" class="help" style="margin-top:8px;"></div>
-      </div>
+      <h4>MSDS AI 분석</h4>
+      <p>OpenRouter를 통해 Gemini 3.1 Flash Lite를 사용합니다. 인증키와 모델은 서버에서 관리합니다.</p>
+      <p>AI 분석을 실행하면 선택한 제품 사진 또는 추출된 MSDS 문서 내용이 모델 제공자에게 전송됩니다.</p>
+      <p id="aiServerStatus" class="help" role="status">서버 상태를 확인하고 있습니다.</p>
+      <div class="actions"><button type="button" onclick="updateApiStatusText(true)">연결 상태 새로고침</button></div>
     </div>
-
-
-
     <div class="actions" style="margin-top:16px;">
-      <button class="success" onclick="saveApiConfig()">설정 저장</button>
-      <button class="secondary" onclick="closeApiConfigModal()">취소</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal 2: API Test Modal (Section 19) -->
-<div id="apiTestModal" class="modal-overlay hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>🧪 API 실시간 연결 테스트 및 진단 (Section 19)</h3>
-      <button class="close-btn" onclick="closeApiTestModal()">&times;</button>
-    </div>
-
-    <div class="card">
-      <h4>[🌐 OpenRouter API 테스트]</h4>
-      <div>연결상태: <span id="tstOpenRouterBadge" class="badge warn">미확인</span></div>
-      <div class="actions">
-        <button onclick="runOpenRouterPingTest()">OpenRouter 연결 응답 테스트</button>
-      </div>
-      <div id="tstOpenRouterResult" style="margin-top:8px; font-family:monospace; background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85rem; max-height:160px; overflow-y:auto;">-</div>
-    </div>
-
-    <div class="card">
-      <h4>[⚡ Gemini API 테스트]</h4>
-      <div>연결상태: <span id="tstGeminiBadge" class="badge warn">미확인</span></div>
-      <div class="actions">
-        <button onclick="runGeminiPingTest()">"안녕하세요" 요청 테스트 실행</button>
-      </div>
-      <div id="tstGeminiResult" style="margin-top:8px; font-family:monospace; background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85rem;">-</div>
-    </div>
-
-
-
-    <div class="actions">
-      <button class="secondary" onclick="closeApiTestModal()">닫기</button>
+      <button class="secondary" onclick="closeApiConfigModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -1129,9 +1029,9 @@ table:not(#legacyTable) th { width: 22%; }
         <tr><th>단계</th><th>검증 항목</th><th>API구분</th><th>구동 상태</th></tr>
       </thead>
       <tbody>
-        <tr><td>1단계</td><td>AI API (OpenRouter/Gemini) 연결 테스트 및 Key 저장</td><td>OpenRouter/REST</td><td><span class="badge ok">실제 API 동작</span></td></tr>
-        <tr><td>2단계</td><td>제품사진 → AI Vision 멀티모달 분석</td><td>Vision Multimodal</td><td><span class="badge ok">실제 API 동작</span></td></tr>
-        <tr><td>3단계</td><td>MSDS PDF 원문 → AI 16개 항목 및 성분 정밀 추출</td><td>AI Multimodal</td><td><span class="badge ok">실제 API 동작</span></td></tr>
+        <tr><td>1단계</td><td>MSDS AI 서버 연결 상태 확인</td><td>OpenRouter/REST</td><td><span class="badge warn">연결 시 확인</span></td></tr>
+        <tr><td>2단계</td><td>제품사진 → AI Vision 멀티모달 분석</td><td>Vision Multimodal</td><td><span class="badge warn">실행 시 확인</span></td></tr>
+        <tr><td>3단계</td><td>MSDS PDF 원문 → AI 16개 항목 및 성분 정밀 추출</td><td>AI Multimodal</td><td><span class="badge warn">실행 시 확인</span></td></tr>
         <tr><td>4단계</td><td>CAS No. → 산업안전보건법 규제 DB 대조</td><td>법정 규제 DB</td><td><span class="badge ok">정상 동작</span></td></tr>
         <tr><td>5단계</td><td>AI 분석결과 + 법정 규제인자 결합 판정</td><td>산안법 기준 대조</td><td><span class="badge ok">정상 동작</span></td></tr>
         <tr><td>6단계</td><td>관리조치 & 법정 관리대상 자동 확인</td><td>비즈니스 로직</td><td><span class="badge ok">실제 API 동작</span></td></tr>
@@ -1152,7 +1052,6 @@ table:not(#legacyTable) th { width: 22%; }
 let currentStage = 1;
 let currentProductData = null;
 let currentMsdsAnalysis = null;
-let currentPdfUrl = null; // 원문 PDF 링크
 let extractedPdfImages = []; // PDF에서 추출된 실제 이미지(Base64) 배열파일 경로
 function sanitizeLedgerRows(rows) {
   if (!Array.isArray(rows)) return [];
@@ -1260,15 +1159,9 @@ const GHS_SVGS = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Sanitize obsolete model names from localStorage and update to latest
-  const curGModel = localStorage.getItem('GEMINI_MODEL');
-  if (!curGModel || curGModel.includes('1.5') || curGModel.includes('2.0') || curGModel.includes('2.5')) {
-    localStorage.setItem('GEMINI_MODEL', 'gemini-3.8-flash');
-  }
-  // Default AI provider to OpenRouter if not already set
-  if (!localStorage.getItem('AI_PROVIDER')) {
-    localStorage.setItem('AI_PROVIDER', 'openrouter');
-  }
+  // Remove credentials previously stored by the browser-based AI integration.
+  ['OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_MODEL', 'GEMINI_MODEL', 'AI_PROVIDER']
+    .forEach(key => localStorage.removeItem(key));
   updateApiStatusText();
   backHome();
 });
@@ -1308,372 +1201,93 @@ function toggleDebugConsole() {
 }
 
 /* ==========================================================================
-   DIRECT GEMINI API CALLER (무료 티어 전용, 단일 직접 호출)
+   SERVER-MANAGED MSDS AI
    ========================================================================== */
-async function callGeminiApi(key, selectedModel, payload) {
-  const cleanKey = (key || '').trim();
-  const model = (selectedModel || localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash').trim();
+let msdsAiServerStatus = null;
 
-  if (!cleanKey) {
-    return { ok: false, error: 'Gemini API Key가 비어 있습니다.' };
-  }
-
+async function getAiServerStatus(force = false) {
+  if (msdsAiServerStatus && !force) return msdsAiServerStatus;
   try {
-    logDebug(`Gemini API 직접 호출 (${model})...`, { model });
-    const startTime = Date.now();
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const elapsed = Date.now() - startTime;
-    const data = await res.json();
-
-    if (res.ok && data.candidates && data.candidates.length > 0) {
-      localStorage.setItem('GEMINI_MODEL', model);
-      updateApiStatusText();
-      logDebug(`Gemini API 호출 성공 (${model}, ${elapsed}ms)`, data);
-      return { ok: true, data, model, elapsed };
-    }
-
-    const errMsg = data.error?.message || `HTTP ${res.status}`;
-    const errText = `Gemini API 오류 (${model} / HTTP ${res.status}): ${errMsg}`;
-    logDebug(`Gemini API 호출 실패 (${model})`, data);
-    return { ok: false, data, model, elapsed, error: errText };
-  } catch(err) {
-    const netErr = `네트워크/연결 오류 (${model}): ${err.message}`;
-    logDebug(`Gemini API Exception (${model})`, { error: err.message });
-    return { ok: false, error: netErr };
+    const response = await fetch('/api/ai-status', { cache: 'no-store' });
+    const data = await response.json();
+    const feature = data.features?.msds || {};
+    msdsAiServerStatus = {
+      configured: response.ok && feature.configured === true,
+      model: feature.model || 'google/gemini-3.1-flash-lite',
+      error: response.ok ? '' : (data.error || 'AI 서버 상태를 확인할 수 없습니다.')
+    };
+  } catch (error) {
+    msdsAiServerStatus = { configured: false, model: 'google/gemini-3.1-flash-lite', error: 'AI 서버에 연결할 수 없습니다.' };
   }
+  return msdsAiServerStatus;
 }
 
-/* ==========================================================================
-   API CONFIGURATION & STORAGE (localStorage ONLY)
-   ========================================================================== */
-/* ==========================================================================
-   API CONFIGURATION & STORAGE (localStorage ONLY)
-   ========================================================================== */
-function selectAiProvider(prov) {
-  const hiddenInput = document.getElementById('selectedAiProvider');
-  if (hiddenInput) hiddenInput.value = prov;
-  const tabOr = document.getElementById('tabOpenRouter');
-  const tabG = document.getElementById('tabGemini');
-  const boxOr = document.getElementById('openrouterConfigBox');
-  const boxG = document.getElementById('geminiConfigBox');
-
-  if (prov === 'openrouter') {
-    if (tabOr) { tabOr.style.background = '#1971c2'; tabOr.style.color = '#fff'; tabOr.style.borderColor = '#1971c2'; }
-    if (tabG) { tabG.style.background = '#f8f9fa'; tabG.style.color = '#495057'; tabG.style.borderColor = '#ced4da'; }
-    if (boxOr) boxOr.classList.remove('hidden');
-    if (boxG) boxG.classList.add('hidden');
-  } else {
-    if (tabG) { tabG.style.background = '#1971c2'; tabG.style.color = '#fff'; tabG.style.borderColor = '#1971c2'; }
-    if (tabOr) { tabOr.style.background = '#f8f9fa'; tabOr.style.color = '#495057'; tabOr.style.borderColor = '#ced4da'; }
-    if (boxG) boxG.classList.remove('hidden');
-    if (boxOr) boxOr.classList.add('hidden');
-  }
-}
-
-function toggleAiProviderUI() {
-  const prov = document.getElementById('selectedAiProvider')?.value || 'openrouter';
-  selectAiProvider(prov);
-}
-
-function handleOpenRouterModelChange(sel) {
-  const customInput = document.getElementById('cfgOpenRouterCustomModel');
-  if (sel.value === 'custom') {
-    customInput.classList.remove('hidden');
-    customInput.focus();
-  } else {
-    customInput.classList.add('hidden');
-  }
+async function updateApiStatusText(force = false) {
+  const status = await getAiServerStatus(force);
+  const message = status.configured
+    ? `서버 설정 완료 · ${status.model}`
+    : (status.error || '서버에 OpenRouter 인증키가 설정되지 않았습니다.');
+  const hiddenStatus = document.getElementById('apiKeyStatusText');
+  const visibleStatus = document.getElementById('aiServerStatus');
+  if (hiddenStatus) hiddenStatus.textContent = message;
+  if (visibleStatus) visibleStatus.textContent = message;
+  return status;
 }
 
 function openApiConfigModal() {
-  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : (localStorage.getItem('GEMINI_API_KEY') ? 'gemini' : 'openrouter'));
-  selectAiProvider(provider);
-
-  // OpenRouter fields
-  document.getElementById('cfgOpenRouterKey').value = localStorage.getItem('OPENROUTER_API_KEY') || '';
-  const savedOrModel = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
-  const orSelect = document.getElementById('cfgOpenRouterModel');
-  const customInput = document.getElementById('cfgOpenRouterCustomModel');
-  let found = false;
-  if (orSelect) {
-    for (let opt of orSelect.options) {
-      if (opt.value === savedOrModel) {
-        orSelect.value = savedOrModel;
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      orSelect.value = 'custom';
-      customInput.value = savedOrModel;
-      customInput.classList.remove('hidden');
-    } else {
-      customInput.classList.add('hidden');
-    }
-  }
-
-  // Gemini fields
-  document.getElementById('cfgGeminiKey').value = localStorage.getItem('GEMINI_API_KEY') || '';
-  let savedGModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
-  if (savedGModel.includes('1.5') || savedGModel.includes('2.0') || savedGModel.includes('2.5')) {
-    savedGModel = 'gemini-3.8-flash';
-    localStorage.setItem('GEMINI_MODEL', 'gemini-3.8-flash');
-  }
-  const gSelect = document.getElementById('cfgGeminiModel');
-  if (gSelect) {
-    gSelect.value = savedGModel;
-  }
-
-
-  
   document.getElementById('apiConfigModal').classList.remove('hidden');
+  updateApiStatusText(true);
 }
 
 function closeApiConfigModal() {
   document.getElementById('apiConfigModal').classList.add('hidden');
 }
 
-function saveApiConfig() {
-  const provider = document.getElementById('selectedAiProvider')?.value || 'openrouter';
-  localStorage.setItem('AI_PROVIDER', provider);
-
-  // OpenRouter
-  const orKey = document.getElementById('cfgOpenRouterKey')?.value.trim() || '';
-  let orModel = document.getElementById('cfgOpenRouterModel')?.value || 'google/gemini-2.0-flash-001';
-  if (orModel === 'custom') {
-    orModel = document.getElementById('cfgOpenRouterCustomModel')?.value.trim() || 'google/gemini-2.0-flash-001';
+async function callUnifiedAi({ prompt, markdownText = '', images = [], jsonFormat = true }) {
+  const contentParts = [];
+  let fullPrompt = prompt;
+  if (markdownText) fullPrompt += `\n\n[문서 원문 추출 데이터]\n${markdownText.substring(0, 40000)}`;
+  contentParts.push({ type: 'text', text: fullPrompt });
+  for (const image of images) {
+    if (image && image.data) {
+      const mime = image.mimeType || 'image/jpeg';
+      contentParts.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${image.data}` } });
+    }
   }
-  if (orKey) localStorage.setItem('OPENROUTER_API_KEY', orKey);
-  localStorage.setItem('OPENROUTER_MODEL', orModel);
-
-  // Gemini
-  const gKey = document.getElementById('cfgGeminiKey')?.value.trim() || '';
-  let gModel = document.getElementById('cfgGeminiModel')?.value || 'gemini-3.8-flash';
-  if (gKey) localStorage.setItem('GEMINI_API_KEY', gKey);
-  localStorage.setItem('GEMINI_MODEL', gModel);
-
-
-
-  updateApiStatusText();
-  alert(`AI 설정이 저장되었습니다.\n• AI 활성 엔진: ${provider === 'openrouter' ? 'OpenRouter (' + orModel + ')' : 'Google Gemini (' + gModel + ')'}`);
-  closeApiConfigModal();
-}
-
-function updateApiStatusText() {
-  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
-  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
-  const orModel = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
-  const gKey = localStorage.getItem('GEMINI_API_KEY');
-  const gModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
-  const el = document.getElementById('apiKeyStatusText');
-
-  let aiStatusHtml = '';
-  if (provider === 'openrouter') {
-    aiStatusHtml = `AI 엔진(OpenRouter): <span style="color:${orKey ? '#2b8a3e' : '#ffc107'}">${orKey ? '● 연결됨 (' + orModel + ')' : '● 미연결'}</span>`;
-  } else {
-    aiStatusHtml = `AI 엔진(Gemini): <span style="color:${gKey ? '#2b8a3e' : '#ffc107'}">${gKey ? '● 연결됨 (' + gModel + ')' : '● 미연결'}</span>`;
-  }
-  
-  if (el) {
-    el.innerHTML = aiStatusHtml;
-  }
-}
-
-async function testOpenRouterConnection() {
-  const key = document.getElementById('cfgOpenRouterKey')?.value.trim() || localStorage.getItem('OPENROUTER_API_KEY');
-  let model = document.getElementById('cfgOpenRouterModel')?.value || 'google/gemini-2.0-flash-001';
-  if (model === 'custom') {
-    model = document.getElementById('cfgOpenRouterCustomModel')?.value.trim() || 'google/gemini-2.0-flash-001';
-  }
-  const statusEl = document.getElementById('openrouterTestStatus');
-
-  if (!key) {
-    statusEl.innerHTML = '<span style="color:#d32f2f;">❌ OpenRouter API Key를 입력하세요.</span>';
-    return;
-  }
-
-  statusEl.innerHTML = '<span class="spinner"></span> OpenRouter 연결 테스트 중...';
-  const startTime = Date.now();
+  const started = Date.now();
   try {
-    const res = await fetch('/api/proxy-openrouter', {
+    const response = await fetch('/api/proxy-openrouter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey: key,
-        model: model,
-        messages: [{ role: 'user', content: 'Respond with exactly: OK' }]
+        messages: [{ role: 'user', content: contentParts }],
+        ...(jsonFormat ? { response_format: { type: 'json_object' } } : {})
       })
     });
-    const elapsed = Date.now() - startTime;
-    const data = await res.json();
-    if (res.ok && data.choices && data.choices.length > 0) {
-      statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ OpenRouter 연결 성공 (${data.model || model}, ${elapsed}ms) - 응답: "${escapeHtml(data.choices[0].message?.content?.trim() || 'OK')}"</span>`;
-    } else {
-      const errMsg = data.error?.message || `HTTP ${res.status}`;
-      statusEl.innerHTML = `<span style="color:#d32f2f;">❌ OpenRouter 연결 실패: ${escapeHtml(errMsg)}</span>`;
+    const data = await response.json();
+    if (!response.ok) {
+      const error = typeof data.error === 'string' ? data.error : data.error?.message;
+      return { ok: false, error: error || `AI 서버 오류 (HTTP ${response.status})`, provider: 'openrouter' };
     }
-  } catch(e) {
-    statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 네트워크 오류: ${escapeHtml(e.message)}</span>`;
-  }
-}
-
-async function testGeminiConnection() {
-  const key = document.getElementById('cfgGeminiKey')?.value.trim() || localStorage.getItem('GEMINI_API_KEY');
-  let model = document.getElementById('cfgGeminiModel')?.value || 'gemini-3.8-flash';
-  const statusEl = document.getElementById('geminiTestStatus');
-
-  if (!key) {
-    statusEl.innerHTML = '<span style="color:#d32f2f;">❌ Gemini API Key를 입력하세요.</span>';
-    return;
-  }
-
-  statusEl.innerHTML = '<span class="spinner"></span> Gemini 연결 테스트 중...';
-  const payload = { contents: [{ parts: [{ text: "Respond with OK" }] }] };
-  const res = await callGeminiApi(key, model, payload);
-
-  if (res.ok && res.data.candidates) {
-    statusEl.innerHTML = `<span style="color:#2b8a3e;">✅ 연결 성공 (${res.model}, ${res.elapsed}ms) - 응답: "${escapeHtml(res.data.candidates[0].content.parts[0].text.trim().substring(0,30))}"</span>`;
-  } else {
-    statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 연결 실패: ${escapeHtml(res.error || '알 수 없는 오류')}</span>`;
-  }
-}
-
-async function callUnifiedAi({ prompt, markdownText = '', images = [], jsonFormat = true }) {
-  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
-
-  if (provider === 'openrouter') {
-    const key = localStorage.getItem('OPENROUTER_API_KEY');
-    let model = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
-    if (!key) {
-      return { ok: false, error: 'OpenRouter API Key가 설정되지 않았습니다.' };
-    }
-
-    const contentParts = [];
-    let fullPrompt = prompt;
-    if (markdownText) {
-      fullPrompt += `\n\n[문서 원문 추출 데이터]\n` + markdownText.substring(0, 40000);
-    }
-    contentParts.push({ type: 'text', text: fullPrompt });
-
-    if (images && images.length > 0) {
-      images.forEach(img => {
-        if (img && img.data) {
-          const mime = img.mimeType || 'image/jpeg';
-          contentParts.push({
-            type: 'image_url',
-            image_url: { url: `data:${mime};base64,${img.data}` }
-          });
+    const content = data.choices?.[0]?.message?.content;
+    const raw = typeof content === 'string'
+      ? content
+      : Array.isArray(content) ? content.map(part => part.text || '').join('\n') : '';
+    if (!raw) return { ok: false, error: 'AI 응답이 비어 있습니다.', provider: 'openrouter' };
+    let parsed = null;
+    if (jsonFormat) {
+      const clean = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      try { parsed = JSON.parse(clean); }
+      catch {
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (match) {
+          try { parsed = JSON.parse(match[0]); } catch {}
         }
-      });
-    }
-
-    const messages = [{ role: 'user', content: contentParts }];
-    const payload = {
-      apiKey: key,
-      model: model,
-      messages: messages,
-      response_format: jsonFormat ? { type: 'json_object' } : undefined
-    };
-
-    const startTime = Date.now();
-    try {
-      let res;
-      try {
-        res = await fetch('/api/proxy-openrouter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } catch (proxyNetErr) {
-        res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'School MSDS Smart System'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: messages,
-            response_format: jsonFormat ? { type: 'json_object' } : undefined
-          })
-        });
       }
-
-      const elapsed = Date.now() - startTime;
-      const data = await res.json();
-
-      if (data.choices && data.choices.length > 0) {
-        let rawContent = data.choices[0].message?.content || '';
-        let cleanJson = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-        let parsed = null;
-        try {
-          parsed = JSON.parse(cleanJson);
-        } catch(e) {
-          const m = cleanJson.match(/\{[\s\S]*\}/);
-          if (m) parsed = JSON.parse(m[0]);
-        }
-        return { ok: true, parsed, raw: rawContent, model: data.model || model, elapsed, provider: 'openrouter' };
-      }
-
-      const errMsg = data.error?.message || `OpenRouter HTTP ${res.status}`;
-      return { ok: false, error: errMsg, provider: 'openrouter' };
-    } catch (err) {
-      return { ok: false, error: err.message, provider: 'openrouter' };
     }
-  } else {
-    // Gemini direct
-    const key = localStorage.getItem('GEMINI_API_KEY');
-    let model = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
-    if (!key) {
-      return { ok: false, error: 'Gemini API Key가 설정되지 않았습니다.' };
-    }
-
-    const parts = [];
-    let fullPrompt = prompt;
-    if (markdownText) {
-      fullPrompt += `\n\n[MSDS 원문 텍스트]\n` + markdownText.substring(0, 30000);
-    }
-    parts.push({ text: fullPrompt });
-
-    if (images && images.length > 0) {
-      images.forEach(img => {
-        if (img && img.data) {
-          parts.push({
-            inlineData: {
-              mimeType: img.mimeType || 'image/jpeg',
-              data: img.data
-            }
-          });
-        }
-      });
-    }
-
-    const payload = {
-      contents: [{ parts }],
-      generationConfig: jsonFormat ? { responseMimeType: "application/json" } : {}
-    };
-
-    const res = await callGeminiApi(key, model, payload);
-    if (res.ok && res.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-      const rawText = res.data.candidates[0].content.parts[0].text;
-      let clean = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      let parsed = null;
-      try {
-        parsed = JSON.parse(clean);
-      } catch(e) {
-        const m = clean.match(/\{[\s\S]*\}/);
-        if (m) parsed = JSON.parse(m[0]);
-      }
-      return { ok: true, parsed, raw: rawText, model: res.model, elapsed: res.elapsed, provider: 'gemini' };
-    }
-    return { ok: false, error: res.error, provider: 'gemini' };
+    return { ok: true, parsed, raw, model: data.model || 'google/gemini-3.1-flash-lite', elapsed: Date.now() - started, provider: 'openrouter' };
+  } catch (error) {
+    return { ok: false, error: 'AI 서버에 연결할 수 없습니다.', provider: 'openrouter' };
   }
 }
 
@@ -1742,77 +1356,6 @@ async function testPublicApiConnection() {
   } catch(e) {
     statusEl.innerHTML = `<span style="color:#d32f2f;">❌ 서버 연결 오류: ${e.message}</span>`;
     logDebug('Public API Exception', { error: e.message });
-  }
-}
-
-async function runOpenRouterPingTest() {
-  const badge = document.getElementById('tstOpenRouterBadge');
-  const resEl = document.getElementById('tstOpenRouterResult');
-  const key = localStorage.getItem('OPENROUTER_API_KEY');
-  const model = localStorage.getItem('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-001';
-
-  if (!key) {
-    badge.className = 'badge danger';
-    badge.textContent = 'API Key 미설정';
-    resEl.textContent = 'OpenRouter API Key가 설정되지 않았습니다. 우측 상단의 "⚙️ API 연결 설정"에서 키를 입력하세요.';
-    return;
-  }
-
-  resEl.textContent = `OpenRouter (${model}) 호출 중...`;
-  try {
-    const startTime = Date.now();
-    const res = await fetch('/api/proxy-openrouter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        apiKey: key,
-        model: model,
-        messages: [{ role: 'user', content: '안녕하세요! 한 문장으로 인사해주세요.' }]
-      })
-    });
-    const elapsed = Date.now() - startTime;
-    const data = await res.json();
-    if (res.ok && data.choices && data.choices.length > 0) {
-      badge.className = 'badge ok';
-      badge.textContent = `정상 (${data.model || model}, ${elapsed}ms)`;
-      resEl.textContent = `응답: ${data.choices[0].message?.content?.trim()}\n\n[상세 정보]\n• 모델: ${data.model || model}\n• 응답시간: ${elapsed}ms`;
-    } else {
-      badge.className = 'badge danger';
-      badge.textContent = `오류 (${res.status})`;
-      resEl.textContent = data.error?.message || JSON.stringify(data, null, 2);
-    }
-  } catch(e) {
-    badge.className = 'badge danger';
-    badge.textContent = '네트워크 오류';
-    resEl.textContent = e.message;
-  }
-}
-
-async function runGeminiPingTest() {
-  const badge = document.getElementById('tstGeminiBadge');
-  const resEl = document.getElementById('tstGeminiResult');
-  const key = localStorage.getItem('GEMINI_API_KEY');
-  let model = localStorage.getItem('GEMINI_MODEL') || 'gemini-3.8-flash';
-
-  if (!key) {
-    badge.className = 'badge danger';
-    badge.textContent = 'API Key 미설정';
-    resEl.textContent = 'Gemini API Key가 설정되지 않았습니다.';
-    return;
-  }
-
-  resEl.textContent = '호출 중...';
-  const payload = { contents: [{ parts: [{ text: "안녕하세요" }] }] };
-  const res = await callGeminiApi(key, model, payload);
-
-  if (res.ok && res.data.candidates) {
-    badge.className = 'badge ok';
-    badge.textContent = `정상 (${res.model}, ${res.elapsed}ms)`;
-    resEl.textContent = JSON.stringify(res.data, null, 2);
-  } else {
-    badge.className = 'badge danger';
-    badge.textContent = `오류`;
-    resEl.textContent = res.error || JSON.stringify(res.data, null, 2);
   }
 }
 
@@ -1896,7 +1439,7 @@ function showStage(n) {
   }
   updateStepper(n);
   const texts = {
-    1: '확인 필요 / 제품 사진을 등록하고 Gemini AI로 식별하세요.',
+    1: '확인 필요 / 제품 사진을 등록하고 AI로 식별하세요.',
     2: '확인 필요 / 제조사 공식 MSDS 불러오기 또는 검색을 수행하세요.',
     3: '조치 필요 / MSDS 원문 분석, 공공데이터 대조 및 법정 관리대상 여부를 확인하세요.',
     4: '진행 중 / 이행상태 관리 및 MSDS 버전 이력을 확인하세요.'
@@ -2085,14 +1628,9 @@ async function recognizeWithGemini() {
   const frontFile = document.getElementById('frontPhotoInput').files[0];
   const backFile = document.getElementById('backPhotoInput').files[0];
   const btn = document.getElementById('aiRecognizeBtn');
-  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
-  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
-  const gKey = localStorage.getItem('GEMINI_API_KEY');
-  const hasKey = (provider === 'openrouter' ? orKey : gKey) || orKey || gKey;
-
-  if (!hasKey) {
-    const provName = provider === 'openrouter' ? 'OpenRouter' : 'Gemini';
-    alert(`${provName} API Key가 설정되지 않았습니다. 우측 상단의 "⚙️ API 연결 설정" 버튼을 눌러 Key를 등록하세요.`);
+  const aiStatus = await getAiServerStatus(true);
+  if (!aiStatus.configured) {
+    alert(aiStatus.error || '서버에 OpenRouter 인증키가 설정되지 않았습니다.');
     openApiConfigModal();
     return;
   }
@@ -2103,7 +1641,7 @@ async function recognizeWithGemini() {
   }
 
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> ${provider === 'openrouter' ? 'OpenRouter AI' : 'Gemini AI'} 분석 중...`;
+  btn.innerHTML = '<span class="spinner"></span> AI 분석 중...';
 
   try {
     const prompt = `당신은 대한민국 산업안전보건 및 화학물질 식별 전문가입니다.
@@ -2202,8 +1740,8 @@ async function recognizeWithGemini() {
     checkDuplicateLedger(parsed);
 
   } catch(e) {
-    alert(`Gemini AI 분석 실패: ${e.message}\n오류 상태가 디버그 콘솔에 기록되었습니다.`);
-    logDebug('Gemini Vision Error Exception', { error: e.message });
+    alert(`AI 분석 실패: ${e.message}\n오류 상태가 디버그 콘솔에 기록되었습니다.`);
+    logDebug('AI Vision Error Exception', { error: e.message });
   } finally {
     btn.disabled = false;
     btn.innerHTML = '✨ AI 사진 분석';
@@ -2617,7 +2155,6 @@ function handleMsdsPdfUpload(input) {
           }
           if (pyData.parsed_data) {
             window._preExtractedMsds = pyData.parsed_data;
-            if (pyData.pdf_url) currentPdfUrl = pyData.pdf_url;
             if (pyData.parsed_data.product_name && pyData.parsed_data.product_name !== '제품명 확인 필요') {
               document.getElementById('msdsProdName').textContent = pyData.parsed_data.product_name;
             }
@@ -2677,10 +2214,8 @@ function copyMsdsRequestText() {
 }
 
 async function analyzeMsdsWithGemini() {
-  const provider = localStorage.getItem('AI_PROVIDER') || (localStorage.getItem('OPENROUTER_API_KEY') ? 'openrouter' : 'gemini');
-  const orKey = localStorage.getItem('OPENROUTER_API_KEY');
-  const gKey = localStorage.getItem('GEMINI_API_KEY');
-  const hasAiKey = (provider === 'openrouter' ? orKey : gKey) || orKey || gKey;
+  const aiStatus = await getAiServerStatus(true);
+  const hasAiKey = aiStatus.configured;
   const btn = document.getElementById('runGeminiMsdsBtn');
 
   btn.disabled = true;
@@ -2712,9 +2247,6 @@ async function analyzeMsdsWithGemini() {
           if (pyData.markdown) {
             pythonMarkdown = pyData.markdown;
           }
-          if (pyData.pdf_url) {
-            currentPdfUrl = pyData.pdf_url;
-          }
         }
       } catch (err) {
         console.warn('Python extraction error:', err);
@@ -2724,7 +2256,7 @@ async function analyzeMsdsWithGemini() {
     let parsed = null;
     let apiElapsed = 0;
 
-    // If AI Key is configured (OpenRouter or Gemini), attempt LLM extraction/refinement via Unified AI
+    // Use server-managed OpenRouter when available; otherwise keep Python extraction.
     if (hasAiKey) {
       try {
         const prompt = `당신은 대한민국 화학물질 안전관리 전문가입니다.

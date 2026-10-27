@@ -1,0 +1,46 @@
+{
+  "sourceTitle": "학교 내 근로자 재해예방 안전수칙 - 일반작업",
+  "sourcePublisher": "고용노동부·안전보건공단·대구광역시교육청",
+  "sourceDate": "2024-08-28",
+  "sourceUrl": "https://bogun.sen.go.kr/fus/MI000000000000000599/board/BO00000146/ctgynone/view0010v.do?board_seq=12754",
+  "sourceSha256": "32e3fff4e1c983428c97ece302976b42e1710b1785f726e47ce62d0fc4f1da8d",
+  "extraction": "kordoc forced OCR; rendered poster verification; manually curated semantic chunks",
+  "deduplication": "Ladder, mowing, power-tool, general fire, and lifting guidance already covered by existing sources was excluded.",
+  "pages": [
+    {
+      "pdfPage": 2,
+      "referenceLabel": "PDF 2쪽 · 야간순찰과 통행",
+      "category": "lighting",
+      "searchTerms": [
+        "야간 순찰",
+        "당직",
+        "경비",
+        "조도 75럭스",
+        "휴대용 조명",
+        "문 열림",
+        "안전라인",
+        "화장실 물기"
+      ],
+      "section": "당직·경비의 야간순찰과 실내 통행 안전",
+      "text": "야간순찰 통로에는 충분한 채광과 조명시설을 마련해 자료에서 안내한 75럭스 이상의 조도를 확보하고, 필요한 경우 랜턴이나 휴대용 조명을 사용한다. 문이 갑자기 열려 부딪힐 수 있는 곳에는 바닥 안전라인을 표시하고 통로를 확보한다. 화장실 등 물기가 있는 장소는 바닥 상태를 먼저 확인하고 미끄럼방지화를 착용하며, 문턱·계단 끝에는 눈에 띄는 표시와 미끄럼방지조치를 한다."
+    },
+    {
+      "pdfPage": 2,
+      "referenceLabel": "PDF 2쪽 · 분리수거와 날카로운 폐기물",
+      "category": "sharp",
+      "searchTerms": [
+        "분리수거",
+        "유리 조각",
+        "철사",
+        "베임",
+        "찔림",
+        "집게",
+        "기능성 안전장갑",
+        "안전화"
+      ],
+      "section": "분리수거 중 유리·철사에 의한 베임·찔림 예방",
+      "text": "분리수거와 청소 중에는 봉투나 상자 안에 깨진 유리·철사 등 날카로운 물체가 있는지 눈으로 확인하고 손으로 직접 눌러 담지 않는다. 집게 같은 보조도구를 사용하고 베임·찔림 위험에 맞는 기능성 안전장갑과 안전화를 착용한다."
+    }
+  ],
+  "chunkCount": 2
+}

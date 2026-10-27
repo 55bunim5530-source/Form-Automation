@@ -1,0 +1,68 @@
+{
+  "sourceTitle": "서울특별시교육청 산업안전보건위원회 안내",
+  "sourcePublisher": "서울특별시교육청보건안전진흥원 산업안전보건지원과",
+  "sourceDate": "",
+  "sourceUrl": "https://bogun.sen.go.kr/fus/MI000000000000000792/html/cont0010v.do",
+  "extraction": "Official HTML page; details already present in the safety and health regulation index were omitted",
+  "pages": [
+    {
+      "pdfPage": 1,
+      "referenceLabel": "산업안전보건위원회 · 구성",
+      "category": "organization",
+      "searchTerms": [
+        "산업안전보건위원회 구성",
+        "근로자위원 10명",
+        "사용자위원 10명",
+        "근로자대표",
+        "교육감",
+        "안전관리자",
+        "보건관리자"
+      ],
+      "section": "산업안전보건위원회의 목적과 구성",
+      "text": "산업안전보건위원회는 산업안전보건법 제24조에 따라 안전과 보건에 관한 중요사항을 심의·의결하기 위해 구성·운영한다. 서울특별시교육청 산업안전보건위원회는 근로자위원 10명과 사용자위원 10명으로 구성한다. 근로자위원은 근로자대표와 근로자대표가 지명하는 9명이며, 사용자위원은 사용자대표인 교육감, 안전관리자, 보건관리자와 7명 이내의 부서·기관의 장으로 구성한다.",
+      "sourceUrl": "https://bogun.sen.go.kr/fus/MI000000000000000792/html/cont0010v.do",
+      "sourceKind": "web",
+      "sourceDate": ""
+    },
+    {
+      "pdfPage": 1,
+      "referenceLabel": "산업안전보건위원회 · 회의 운영",
+      "category": "organization",
+      "searchTerms": [
+        "정기회의",
+        "분기별",
+        "임시회의",
+        "의사정족수",
+        "의결정족수",
+        "각 과반수 출석",
+        "출석위원 과반수 찬성"
+      ],
+      "section": "정기·임시회의와 의결 정족수",
+      "text": "산업안전보건위원회 정기회의는 분기별로 개최하고, 위원장이 필요하다고 인정할 때 임시회의를 개최한다. 회의를 열기 위한 의사정족수는 근로자위원과 사용자위원 각각 과반수 출석이며, 안건은 출석위원 과반수의 찬성으로 의결한다.",
+      "sourceUrl": "https://bogun.sen.go.kr/fus/MI000000000000000792/html/cont0010v.do",
+      "sourceKind": "web",
+      "sourceDate": ""
+    },
+    {
+      "pdfPage": 1,
+      "referenceLabel": "산업안전보건위원회 · 심의·의결",
+      "category": "organization",
+      "searchTerms": [
+        "심의 의결 사항",
+        "산업재해 예방계획",
+        "안전보건관리규정 변경",
+        "안전보건교육",
+        "중대재해 원인 조사",
+        "재발방지대책",
+        "건강진단",
+        "유해 위험 기계 설비"
+      ],
+      "section": "산업안전보건위원회의 주요 심의·의결 사항",
+      "text": "주요 심의·의결 사항은 산업재해 예방계획 수립, 안전보건관리규정 작성·변경, 안전보건교육, 중대재해의 원인 조사와 재발방지대책 수립, 근로자 건강진단 등 건강관리, 유해·위험 기계·기구·설비 도입 시 필요한 안전·보건 조치이다.",
+      "sourceUrl": "https://bogun.sen.go.kr/fus/MI000000000000000792/html/cont0010v.do",
+      "sourceKind": "web",
+      "sourceDate": ""
+    }
+  ],
+  "chunkCount": 3
+}
